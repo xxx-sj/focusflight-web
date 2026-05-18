@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
 import { useEffect, useState } from 'react';
 import { audioBus } from '../../lib/audio';
+import { findTrack } from '../../lofi';
 
 const TEAR_THRESHOLD = 180;
 
@@ -18,6 +19,14 @@ export default function CheckIn() {
     if (torn) return;
     setTorn(true);
     audioBus.resume();
+
+    // Start preset music *inside* the user-gesture handler — browsers block
+    // autoplay if play() runs after a setTimeout / React commit.
+    const presetTrack = findTrack(active?.lofiTrack);
+    if (presetTrack) {
+      audioBus.playMusic(presetTrack.url);
+    }
+
     setTimeout(() => {
       audioBus.play('takeoff');
       // Engine ambient fades in after the takeoff roar peaks

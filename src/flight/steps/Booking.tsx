@@ -101,6 +101,7 @@ export default function Booking() {
           {isYouTubeTrack(selectedTrack) && !ytError && (
             <div className="text-xs text-emerald-600 mt-2">✓ YouTube 선택됨: {youtubeIdFromTrack(selectedTrack)}</div>
           )}
+          <p className="text-[11px] text-slate-500 mt-2">YouTube는 비행 중 자동재생됩니다. 볼륨 조절은 브라우저 탭 볼륨 사용.</p>
         </div>
 
         <p className="text-xs text-slate-400 mt-2">선택한 트랙은 비행 시작(stub tear) 시점부터 재생됩니다.</p>
