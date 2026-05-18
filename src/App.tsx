@@ -5,6 +5,7 @@ import Stats from './routes/Stats';
 import Settings from './routes/Settings';
 import { audioBus } from './lib/audio';
 import { useSettingsStore } from './store/settingsStore';
+import MusicLayer from './flight/MusicLayer';
 
 export default function App() {
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <MusicLayer />
       <nav className="p-4 bg-slate-900 text-white flex gap-4">
         <Link to="/">Home</Link>
         <Link to="/stats">Stats</Link>
