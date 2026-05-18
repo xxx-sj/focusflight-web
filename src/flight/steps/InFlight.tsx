@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import Countdown from '../../components/Countdown';
@@ -5,6 +6,13 @@ import Countdown from '../../components/Countdown';
 export default function InFlight() {
   const { active, land, abort } = useFlightStore();
   const { settings } = useSettingsStore();
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find(c => c.id === active.flight.category);
 
