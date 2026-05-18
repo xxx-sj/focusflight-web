@@ -44,6 +44,18 @@ export default function MusicLayer() {
   const preset = inFlight ? findTrack(active?.lofiTrack) : null;
   const ytId = inFlight ? youtubeIdFromTrack(active?.lofiTrack) : null;
 
+  // Seconds elapsed since the flight started — used to seek music forward on
+  // reload so it stays in sync with the countdown instead of restarting.
+  // Read once at mount via useRef so we don't keep re-rendering iframe src.
+  const elapsedAtMountRef = useRef<number>(0);
+  if (elapsedAtMountRef.current === 0 && inFlight && active?.flight.startedAt) {
+    elapsedAtMountRef.current = Math.max(
+      0,
+      Math.floor((Date.now() - active.flight.startedAt) / 1000),
+    );
+  }
+  const startAtSeconds = elapsedAtMountRef.current;
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -51,6 +63,20 @@ export default function MusicLayer() {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = musicVolume;
   }, [musicVolume]);
+
+  // Seek preset audio to the elapsed position on mount so a refresh during a
+  // long flight doesn't snap the loop back to 0:00.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el || startAtSeconds <= 0) return;
+    const seek = () => {
+      if (el && isFinite(el.duration) && el.duration > 0) {
+        el.currentTime = startAtSeconds % el.duration;
+      }
+    };
+    if (el.readyState >= 1) seek();
+    else el.addEventListener('loadedmetadata', seek, { once: true });
+  }, [preset?.id, startAtSeconds]);
 
   // Sync volume to the YouTube iframe whenever it changes. The player API
   // expects integers 0..100. We re-send on a short delay too in case the
@@ -90,17 +116,23 @@ export default function MusicLayer() {
           <iframe
             key={ytId}
             ref={iframeRef}
-            // enablejsapi=1 lets us drive the player via postMessage.
-            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&enablejsapi=1`}
+            // enablejsapi=1 lets us drive the player via postMessage. `start`
+            // is honored by the embed and seeks forward by elapsed seconds so
+            // the music doesn't restart on refresh.
+            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&enablejsapi=1${startAtSeconds > 0 ? `&start=${startAtSeconds}` : ''}`}
             title="In-flight music"
             allow="autoplay; encrypted-media"
             referrerPolicy="strict-origin-when-cross-origin"
             onLoad={() => {
               const iframe = iframeRef.current;
               if (!iframe) return;
-              // YouTube only accepts commands after a "listening" handshake.
               sendYouTubeCommand(iframe, 'addEventListener', ['onReady']);
               sendYouTubeCommand(iframe, 'setVolume', [Math.round(musicVolume * 100)]);
+              // Belt-and-suspenders: also seek via API in case `start=` was
+              // ignored (some embeds don't honor it for live streams).
+              if (startAtSeconds > 0) {
+                sendYouTubeCommand(iframe, 'seekTo', [startAtSeconds, true]);
+              }
             }}
             style={{ width: '100%', height: '100%', border: 0 }}
           />
