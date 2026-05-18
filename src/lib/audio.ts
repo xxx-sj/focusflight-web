@@ -128,13 +128,26 @@ export class AudioBus {
       const el = new Audio(url);
       el.loop = true;
       el.preload = 'auto';
-      el.volume = this.musicVolume;
-      el.play().catch(() => { /* missing or blocked */ });
+      // Floor volume so users with a stale `volume: 0` setting still hear
+      // something on first preview — they can lower it from Settings.
+      el.volume = Math.max(this.musicVolume, 0.05);
+      const p = el.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch((err) => {
+          console.warn('[audioBus] music play() rejected:', err?.name, err?.message);
+        });
+      }
+      el.addEventListener('error', () => {
+        const e = el.error;
+        console.warn('[audioBus] music element error:', e?.code, e?.message, 'src=', el.src);
+      });
+      console.info('[audioBus] playMusic url=', url, 'volume=', el.volume);
       this.musicEl = el;
       this.musicUrl = url;
       this.musicActive = true;
       this.applyEngineDucking();
-    } catch {
+    } catch (e) {
+      console.warn('[audioBus] playMusic threw:', e);
       this.musicEl = null;
       this.musicUrl = null;
       this.musicActive = false;
