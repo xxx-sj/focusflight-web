@@ -57,13 +57,15 @@ export default function Booking() {
       </section>
 
       <section>
-        <h3 className="text-sm uppercase tracking-wider mb-3">Route</h3>
+        <h3 className="text-sm uppercase tracking-wider mb-3">
+          Route <span className="text-red-500 normal-case">*필수</span>
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <div className="text-xs text-slate-500 mb-1">From (현재 위치)</div>
             <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
-              <option value="">선택</option>
+              className={`w-full px-3 py-2 border-2 rounded-lg bg-white ${origin ? 'border-emerald-500' : 'border-red-300'}`}>
+              <option value="">━ 선택 ━</option>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
               ))}
@@ -72,14 +74,19 @@ export default function Booking() {
           <label className="block">
             <div className="text-xs text-slate-500 mb-1">To (목적지)</div>
             <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
-              <option value="">선택</option>
+              className={`w-full px-3 py-2 border-2 rounded-lg bg-white ${destination ? 'border-emerald-500' : 'border-red-300'}`}>
+              <option value="">━ 선택 ━</option>
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
               ))}
             </select>
           </label>
         </div>
+        {origin && destination && origin !== destination && (
+          <p className="text-xs text-emerald-700 mt-2 font-semibold">
+            ✓ {COUNTRIES.find((c) => c.code === origin)?.nameKo} → {COUNTRIES.find((c) => c.code === destination)?.nameKo} 경로가 지도에 표시됩니다
+          </p>
+        )}
         {origin && destination && origin === destination && (
           <p className="text-xs text-red-500 mt-2">출발지와 목적지가 같습니다.</p>
         )}
@@ -139,6 +146,15 @@ export default function Booking() {
         <p className="text-xs text-slate-400 mt-2">선택한 트랙은 비행 시작(stub tear) 시점부터 재생됩니다.</p>
       </section>
 
+      {!canProceed && (
+        <p className="text-xs text-red-500 text-right">
+          {!selectedDuration && '시간 미선택  '}
+          {!selectedCategory && '카테고리 미선택  '}
+          {!origin && '출발지 미선택  '}
+          {!destination && '목적지 미선택  '}
+          {origin && destination && origin === destination && '출발지 ≠ 목적지'}
+        </p>
+      )}
       <div className="flex gap-3 justify-end">
         <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
         <button onClick={advance} disabled={!canProceed}
