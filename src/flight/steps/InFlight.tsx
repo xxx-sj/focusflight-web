@@ -33,9 +33,11 @@ export default function InFlight() {
     };
   }, []);
 
-  // Per-second tick to drive the plane along the map path.
+  // Drive the plane along the map path. ~5 fps re-renders are plenty smooth
+  // for a flight that lasts many minutes, and avoids burning CPU on a
+  // long-running session.
   useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    const id = window.setInterval(() => setTick((t) => t + 1), 200);
     return () => clearInterval(id);
   }, []);
 
