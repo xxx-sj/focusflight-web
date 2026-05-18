@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import Countdown from '../../components/Countdown';
+import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 
 export default function InFlight() {
   const { active, land, abort } = useFlightStore();
@@ -11,6 +12,16 @@ export default function InFlight() {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
+  useEffect(() => {
+    requestWakeLock();
+    const onVis = () => { if (document.visibilityState === 'visible') requestWakeLock(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      releaseWakeLock();
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
