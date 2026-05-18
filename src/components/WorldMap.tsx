@@ -117,23 +117,34 @@ export default function WorldMap({
   let planePos: [number, number] = [0, 0];
   let planeAngle = 0;
   if (origin && destination && o && d) {
-    // True great-circle path: sample ~48 points along the geodesic between
+    // True great-circle path: sample ~96 points along the geodesic between
     // origin and destination, project each to screen space, and draw as a
-    // polyline. This gives the natural curve you see in airline route maps
-    // and works correctly for north-south, east-west, and polar routes.
+    // polyline. Detect antimeridian crossings (where projected x jumps by
+    // more than half the map width) and break the polyline at those points
+    // so the line wraps around the edges instead of slicing across the map.
     const interp = geoInterpolate(
       [origin.lng, origin.lat],
       [destination.lng, destination.lat],
     );
-    const samples = 48;
+    const samples = 96;
     const pts: Array<[number, number]> = [];
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
       const [lng, lat] = interp(t);
       pts.push(projectLatLng(lng, lat));
     }
-    pathD = pts
-      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]},${p[1]}`)
+
+    const segments: Array<Array<[number, number]>> = [[]];
+    for (let i = 0; i < pts.length; i++) {
+      if (i > 0 && Math.abs(pts[i][0] - pts[i - 1][0]) > MAP_W / 2) {
+        // antimeridian jump → start a new segment
+        segments.push([]);
+      }
+      segments[segments.length - 1].push(pts[i]);
+    }
+    pathD = segments
+      .filter((s) => s.length > 1)
+      .map((s) => s.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]},${p[1]}`).join(' '))
       .join(' ');
 
     // Plane position along the great-circle at current progress.
@@ -142,14 +153,19 @@ export default function WorldMap({
     planePos = projectLatLng(pLng, pLat);
 
     // Tangent angle: project a tiny step ahead (or behind near the end) to
-    // figure out which way the plane should face.
+    // figure out which way the plane should face. If the step crosses the
+    // antimeridian, fall back to the previous angle by mirroring x-component
+    // sign — keeps the plane facing sanely even at the wrap-around.
     const tAhead = Math.min(1, tp + 0.005);
     const tBehind = Math.max(0, tp - 0.005);
     const [aLng, aLat] = interp(tAhead);
     const [bLng, bLat] = interp(tBehind);
     const ahead = projectLatLng(aLng, aLat);
     const behind = projectLatLng(bLng, bLat);
-    planeAngle = (Math.atan2(ahead[1] - behind[1], ahead[0] - behind[0]) * 180) / Math.PI;
+    const dx = ahead[0] - behind[0];
+    const dy = ahead[1] - behind[1];
+    const useDx = Math.abs(dx) > MAP_W / 2 ? -Math.sign(dx) * (MAP_W - Math.abs(dx)) : dx;
+    planeAngle = (Math.atan2(dy, useDx) * 180) / Math.PI;
   }
 
   return (
