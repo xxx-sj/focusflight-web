@@ -5,6 +5,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import Countdown from '../../components/Countdown';
 import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
+import { notify } from '../../lib/notifications';
 
 function Cloud({ delay, top, scale }: { delay: number; top: string; scale: number }) {
   return (
@@ -46,6 +47,9 @@ export default function InFlight() {
   function handleExpire() {
     audioBus.stop('engine');
     audioBus.play('landing');
+    if (useSettingsStore.getState().settings.notificationsEnabled) {
+      notify('Flight landed', 'Your focus session is complete.');
+    }
     land();
   }
 
