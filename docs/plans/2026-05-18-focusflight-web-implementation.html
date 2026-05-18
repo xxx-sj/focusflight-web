@@ -1,0 +1,2966 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FocusFlight Web Implementation Plan</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github.min.css" media="(prefers-color-scheme: light)" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github-dark.min.css" media="(prefers-color-scheme: dark)" />
+<script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js"></script>
+
+<style>
+:root {
+  --fg: #1f2328;
+  --fg-soft: #424a53;
+  --muted: #6e7781;
+  --bg: #ffffff;
+  --bg-soft: #f6f8fa;
+  --bg-sidebar: #fafbfc;
+  --border: #d1d9e0;
+  --border-soft: #eaeef2;
+  --code-bg: #f6f8fa;
+  --accent: #0969da;
+  --accent-soft: #ddf4ff;
+  --th-bg: #f6f8fa;
+  --shadow: 0 1px 2px rgba(31,35,40,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e6edf3;
+    --fg-soft: #c9d1d9;
+    --muted: #8b949e;
+    --bg: #0d1117;
+    --bg-soft: #161b22;
+    --bg-sidebar: #0d1117;
+    --border: #30363d;
+    --border-soft: #21262d;
+    --code-bg: #161b22;
+    --accent: #4493f8;
+    --accent-soft: #0c2d6b;
+    --th-bg: #161b22;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  line-height: 1.75;
+  font-size: 16px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 100; }
+.progress > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #F4A261); transition: width 0.05s linear; }
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
+.sidebar { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; padding: 32px 20px 32px 32px; border-right: 1px solid var(--border-soft); background: var(--bg-sidebar); font-size: 13.5px; }
+.sidebar .brand { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+.sidebar .toc-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; font-weight: 600; }
+.sidebar .toc { list-style: none; padding: 0; margin: 0; }
+.sidebar .toc a { display: block; padding: 5px 10px; color: var(--fg-soft); text-decoration: none; border-left: 2px solid transparent; line-height: 1.45; font-size: 13px; }
+.sidebar .toc a:hover { color: var(--accent); border-left-color: var(--border); }
+.sidebar .toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.sidebar .toc .lvl-3 { padding-left: 22px; font-size: 12.5px; color: var(--muted); }
+.content { padding: 56px 64px 120px; max-width: 880px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; font-size: 12.5px; color: var(--muted); }
+.meta .tag { background: var(--bg-soft); border: 1px solid var(--border-soft); border-radius: 999px; padding: 3px 10px; }
+h1, h2, h3, h4 { font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.1em; margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); }
+h2 { font-size: 1.5em; margin: 2.4em 0 0.6em; padding-top: 1.6em; border-top: 1px solid var(--border-soft); }
+h2:first-of-type { border-top: none; padding-top: 0; margin-top: 1.6em; }
+h3 { font-size: 1.2em; margin: 2em 0 0.5em; }
+h4 { font-size: 1.02em; margin: 1.6em 0 0.6em; color: var(--fg-soft); }
+p { margin: 0 0 1em; }
+strong { font-weight: 700; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.5em; margin: 0 0 1em; }
+li { margin: 0.25em 0; }
+blockquote { margin: 1em 0; padding: 14px 18px; color: var(--fg-soft); border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+code { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; font-size: 0.86em; background: var(--bg-soft); color: #cf222e; padding: 0.12em 0.42em; border-radius: 5px; border: 1px solid var(--border-soft); }
+@media (prefers-color-scheme: dark) { code { color: #ff7b72; } }
+pre { background: var(--code-bg); border: 1px solid var(--border-soft); border-radius: 10px; padding: 0; overflow: hidden; margin: 1.2em 0; box-shadow: var(--shadow); }
+pre code { display: block; background: transparent !important; color: var(--fg) !important; border: none; padding: 16px 18px; font-size: 13.5px; line-height: 1.65; overflow-x: auto; white-space: pre; }
+.table-wrap { overflow-x: auto; margin: 1em 0; border: 1px solid var(--border-soft); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th, td { border-bottom: 1px solid var(--border-soft); padding: 10px 16px; text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+hr { border: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 2.4em 0; }
+
+/* ============ DESIGN SAMPLES ============ */
+.design-samples {
+  background: linear-gradient(180deg, #0A1628 0%, #1a2942 100%);
+  border-radius: 16px;
+  padding: 28px;
+  margin: 1.5em 0;
+  color: #F5F1E8;
+}
+.design-samples h4 { color: #F4A261; margin-top: 2em; margin-bottom: 0.8em; }
+.design-samples h4:first-child { margin-top: 0; }
+
+/* Swatches */
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.swatch {
+  background: var(--c);
+  color: #fff;
+  border-radius: 12px;
+  padding: 18px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.swatch span { font-weight: 600; }
+.swatch code {
+  background: rgba(0,0,0,0.25);
+  color: inherit !important;
+  border: none;
+  font-size: 11.5px;
+  padding: 2px 6px;
+  align-self: flex-start;
+}
+
+/* Boarding pass */
+.boarding-pass {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  background: #F5F1E8;
+  color: #0A1628;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  max-width: 640px;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+.bp-main { padding: 22px 24px; border-right: 2px dashed #c5bfb1; }
+.bp-stub {
+  background: #F4A261;
+  color: #0A1628;
+  padding: 22px 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  min-width: 140px;
+}
+.bp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.bp-brand { font-weight: 800; font-size: 12px; letter-spacing: 0.15em; }
+.bp-class { font-size: 10px; color: #6e7781; letter-spacing: 0.1em; }
+.bp-route { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.bp-airport { text-align: center; }
+.bp-code { font-size: 28px; font-weight: 800; letter-spacing: 0.05em; }
+.bp-label { font-size: 10px; color: #6e7781; letter-spacing: 0.1em; margin-top: 2px; }
+.bp-plane { font-size: 22px; color: #F4A261; transform: rotate(-20deg); }
+.bp-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.bp-k { font-size: 9.5px; color: #6e7781; letter-spacing: 0.1em; margin-bottom: 3px; }
+.bp-v { font-size: 14px; font-weight: 700; }
+.bp-seat { font-size: 36px; font-weight: 800; line-height: 1; margin: 4px 0 8px; }
+.bp-tear { font-size: 9px; letter-spacing: 0.1em; opacity: 0.7; }
+
+/* Seat map */
+.seatmap { background: #0A1628; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; }
+.seatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  max-width: 320px;
+  margin: 0 auto 14px;
+}
+.seat-dot {
+  width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 4px;
+}
+.seat-dot.available { background: #F5F1E8; }
+.seat-dot.selected { background: #F4A261; box-shadow: 0 0 0 3px rgba(244,162,97,0.25); }
+.seat-dot.taken { background: #6e7781; opacity: 0.4; }
+.seatmap-legend { font-size: 12px; color: #c9d1d9; text-align: center; display: flex; gap: 18px; justify-content: center; }
+
+/* Countdown */
+.countdown-mock {
+  display: flex; justify-content: center;
+  padding: 16px 0;
+}
+.cd-window {
+  width: 100%;
+  max-width: 460px;
+  aspect-ratio: 5 / 3;
+  background: linear-gradient(180deg, #0A1628 0%, #264653 60%, #F4A261 100%);
+  border: 8px solid #1a2942;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+}
+.cd-cloud {
+  position: absolute;
+  background: rgba(245,241,232,0.85);
+  border-radius: 50px;
+  filter: blur(2px);
+}
+.cd-cloud-1 { width: 110px; height: 24px; top: 28%; left: 15%; opacity: 0.8; }
+.cd-cloud-2 { width: 80px; height: 18px; top: 55%; left: 55%; opacity: 0.65; }
+.cd-time {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: clamp(40px, 9vw, 72px);
+  font-weight: 800;
+  color: #F5F1E8;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  letter-spacing: 0.05em;
+}
+.cd-cat {
+  position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.18em; color: rgba(245,241,232,0.7);
+}
+
+/* Step flow */
+.step-flow {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  justify-content: center;
+  padding: 8px 0;
+}
+.step {
+  background: rgba(245,241,232,0.08);
+  border: 1px solid rgba(245,241,232,0.2);
+  color: #F5F1E8;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.05em;
+}
+.step.active {
+  background: #F4A261;
+  color: #0A1628;
+  border-color: #F4A261;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(244,162,97,0.35);
+}
+.arrow { color: rgba(245,241,232,0.4); font-size: 14px; }
+
+/* Sound timeline */
+.sound-timeline { font-family: "JetBrains Mono", monospace; font-size: 11px; }
+.sl-row { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: center; margin: 6px 0; }
+.sl-label { color: rgba(245,241,232,0.7); letter-spacing: 0.1em; text-transform: uppercase; }
+.sl-track {
+  position: relative;
+  height: 22px;
+  background: rgba(245,241,232,0.06);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.sl-clip {
+  position: absolute;
+  top: 2px; bottom: 2px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  color: #0A1628;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sl-clip.oneshot { background: #F4A261; }
+.sl-clip.loop { background: #2A9D8F; color: #F5F1E8; }
+.sl-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0 0 90px;
+  font-size: 10px;
+  color: rgba(245,241,232,0.5);
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 20px; }
+  .sidebar .toc { max-height: 240px; overflow-y: auto; }
+  .content { padding: 32px 22px 80px; }
+  .boarding-pass { grid-template-columns: 1fr; }
+  .bp-main { border-right: none; border-bottom: 2px dashed #c5bfb1; }
+}
+</style>
+</head>
+<body>
+<div class="progress"><div></div></div>
+<div class="layout">
+  <aside class="sidebar"><div class="brand">FocusFlight · Plan</div><div class="toc-title">On this page</div><ul class="toc"><li class="lvl-2"><a href="#file-structure">File Structure</a></li><li class="lvl-3"><a href="#core-types-storage-m1">Core types &amp; storage (M1)</a></li><li class="lvl-3"><a href="#timer-stats-m1">Timer &amp; stats (M1)</a></li><li class="lvl-3"><a href="#state-stores-m1">State stores (M1)</a></li><li class="lvl-3"><a href="#routing-shell-m1">Routing &amp; shell (M1)</a></li><li class="lvl-3"><a href="#flight-ritual-flow-m2">Flight ritual flow (M2)</a></li><li class="lvl-3"><a href="#reusable-components-m2m4">Reusable components (M2/M4)</a></li><li class="lvl-3"><a href="#sound-system-m6">Sound system (M6)</a></li><li class="lvl-3"><a href="#notifications-polish-m5m7">Notifications &amp; polish (M5/M7)</a></li><li class="lvl-3"><a href="#integration-tests-각-마일스톤">Integration tests (각 마일스톤)</a></li><li class="lvl-2"><a href="#작업-컨벤션">작업 컨벤션</a></li><li class="lvl-2"><a href="#chunk-1-m1-project-skeleton">Chunk 1: M1 — Project Skeleton</a></li><li class="lvl-3"><a href="#task-11-vite-프로젝트-초기화">Task 1.1: Vite 프로젝트 초기화</a></li><li class="lvl-3"><a href="#task-12-타입-정의">Task 1.2: 타입 정의</a></li><li class="lvl-3"><a href="#task-13-storagets-localstorage-추상화-tdd">Task 1.3: storage.ts — localStorage 추상화 (TDD)</a></li><li class="lvl-3"><a href="#task-14-timerts-datenow-기반-카운트-tdd">Task 1.4: timer.ts — Date.now() 기반 카운트 (TDD)</a></li><li class="lvl-3"><a href="#task-15-statsts-kpi주간도넛-derivation-tdd">Task 1.5: stats.ts — KPI/주간/도넛 derivation (TDD)</a></li><li class="lvl-3"><a href="#task-16-flightstore-zustand-state-machine">Task 1.6: flightStore — Zustand state machine</a></li><li class="lvl-3"><a href="#task-17-settingsstore-router-skeleton-빈-라우트">Task 1.7: settingsStore + Router skeleton + 빈 라우트</a></li><li class="lvl-3"><a href="#task-18-m1-종료-체크">Task 1.8: M1 종료 체크</a></li><li class="lvl-2"><a href="#chunk-2-m2-core-flight-flow">Chunk 2: M2 — Core Flight Flow</a></li><li class="lvl-3"><a href="#task-21-flightmachine-컨테이너">Task 2.1: FlightMachine 컨테이너</a></li><li class="lvl-3"><a href="#task-22-booking-step-시간카테고리-선택">Task 2.2: Booking step — 시간/카테고리 선택</a></li><li class="lvl-3"><a href="#task-23-seatselection-3-6-그리드">Task 2.3: SeatSelection — 3-6 그리드</a></li><li class="lvl-3"><a href="#task-24-boardingpass-step">Task 2.4: BoardingPass step</a></li><li class="lvl-3"><a href="#task-25-checkin-stub-drag-to-tear">Task 2.5: CheckIn — stub drag-to-tear</a></li><li class="lvl-3"><a href="#task-26-inflight-카운트다운-만료">Task 2.6: InFlight — 카운트다운 + 만료</a></li><li class="lvl-3"><a href="#task-27-landed-step">Task 2.7: Landed step</a></li><li class="lvl-3"><a href="#task-28-m2-통합-테스트-full-flow">Task 2.8: M2 통합 테스트 (full flow)</a></li><li class="lvl-3"><a href="#task-29-m2-마일스톤-종료">Task 2.9: M2 마일스톤 종료</a></li><li class="lvl-2"><a href="#chunk-3-m3-persistence-resume">Chunk 3: M3 — Persistence &amp; Resume</a></li><li class="lvl-3"><a href="#task-31-resumemodal-컴포넌트">Task 3.1: ResumeModal 컴포넌트</a></li><li class="lvl-3"><a href="#task-32-resume-시-만료-즉시-처리-beforeunload-경고">Task 3.2: Resume 시 만료 즉시 처리 + beforeunload 경고</a></li><li class="lvl-3"><a href="#task-33-wakelock-in-flight-중-화면-sleep-방지">Task 3.3: WakeLock — In-flight 중 화면 sleep 방지</a></li><li class="lvl-2"><a href="#chunk-4-m4-stats-dashboard">Chunk 4: M4 — Stats Dashboard</a></li><li class="lvl-3"><a href="#task-41-kpicard-컴포넌트">Task 4.1: KpiCard 컴포넌트</a></li><li class="lvl-3"><a href="#task-42-weeklybar-차트-recharts">Task 4.2: WeeklyBar 차트 (Recharts)</a></li><li class="lvl-3"><a href="#task-43-categorydonut">Task 4.3: CategoryDonut</a></li><li class="lvl-3"><a href="#task-44-stats-페이지-통합-기간-토글-포함">Task 4.4: Stats 페이지 통합 (기간 토글 포함)</a></li><li class="lvl-2"><a href="#chunk-5-m5-polish-visual-animations">Chunk 5: M5 — Polish (Visual + Animations)</a></li><li class="lvl-3"><a href="#task-51-컬러-토큰-tailwind-확장">Task 5.1: 컬러 토큰 + Tailwind 확장</a></li><li class="lvl-3"><a href="#task-52-단계-전환-애니메이션">Task 5.2: 단계 전환 애니메이션</a></li><li class="lvl-3"><a href="#task-53-in-flight-구름-애니메이션-창문-프레임">Task 5.3: In-flight 구름 애니메이션 + 창문 프레임</a></li><li class="lvl-3"><a href="#task-54-a11y-aria-label-reduced-motion-검증">Task 5.4: a11y aria-label + reduced-motion 검증</a></li><li class="lvl-2"><a href="#chunk-6-m6-sound-system">Chunk 6: M6 — Sound System</a></li><li class="lvl-3"><a href="#task-61-libaudiots-audiocontext-gainnode">Task 6.1: lib/audio.ts — AudioContext + GainNode</a></li><li class="lvl-3"><a href="#task-62-사운드-파일-추가">Task 6.2: 사운드 파일 추가</a></li><li class="lvl-3"><a href="#task-63-전환별-사운드-큐-연결">Task 6.3: 전환별 사운드 큐 연결</a></li><li class="lvl-2"><a href="#chunk-7-m7-settings-notifications">Chunk 7: M7 — Settings &amp; Notifications</a></li><li class="lvl-3"><a href="#task-71-notification-api-wrapper">Task 7.1: Notification API wrapper</a></li><li class="lvl-3"><a href="#task-72-settings-페이지-ui">Task 7.2: Settings 페이지 UI</a></li><li class="lvl-3"><a href="#task-73-비행-종료-알림-발사">Task 7.3: 비행 종료 알림 발사</a></li><li class="lvl-2"><a href="#chunk-8-m8-deployment">Chunk 8: M8 — Deployment</a></li><li class="lvl-3"><a href="#task-81-readme">Task 8.1: README</a></li><li class="lvl-2"><a href="#deploy">Deploy</a></li><li class="lvl-3"><a href="#vercel">Vercel</a></li><li class="lvl-3"><a href="#cloudflare-pages">Cloudflare Pages</a></li><li class="lvl-2"><a href="#spec-plan">Spec &amp; Plan</a></li><li class="lvl-3"><a href="#task-82-수동-검증-체크리스트">Task 8.2: 수동 검증 체크리스트</a></li><li class="lvl-3"><a href="#task-83-vercel-배포">Task 8.3: Vercel 배포</a></li><li class="lvl-2"><a href="#완료-후">완료 후</a></li><li class="lvl-2"><a href="#후속-v11-아이디어">후속 (v1.1+ 아이디어)</a></li></ul></aside>
+  <main class="content">
+    <div class="meta"><span class="tag">🛠 Implementation Plan</span><span class="tag">2026-05-18</span><span class="tag">Approved</span></div>
+    <h1 id="focusflight-web-implementation-plan">FocusFlight Web Implementation Plan</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> 브라우저에서 동작하는 개인용 집중 타이머. 비행 의식 UX(예약→좌석→보딩패스→체크인→인플라이트→착륙)를 핵심으로, 통계 대시보드와 몰입형 사운드를 포함한 정적 SPA를 만들어 Vercel/Cloudflare Pages에 배포한다.</p>
+<p><strong>Architecture:</strong> Vite + React 18 SPA. 의식 플로우는 <code>/</code> 라우트 위에서 동작하는 상태 머신(Zustand)으로, <code>/stats</code>·<code>/settings</code>는 별도 라우트. 모든 데이터는 localStorage에 영속화하며 새로고침 시 진행 중인 비행을 복구한다. 사운드는 Web Audio API + GainNode로 마스터 볼륨 제어, 시각 효과는 Framer Motion.</p>
+<p><strong>Tech Stack:</strong> Vite 5, React 18, TypeScript, Tailwind CSS 3, Framer Motion 11, Zustand 4, React Router 6, Recharts 2, Vitest, React Testing Library, jsdom</p>
+<p><strong>Spec:</strong> <a href="../specs/2026-05-18-focusflight-web-design.md"><code>docs/specs/2026-05-18-focusflight-web-design.md</code></a></p>
+<hr>
+<h2 id="file-structure">File Structure</h2>
+<p>각 파일은 하나의 책임만 가진다. 큰 파일이 생기면 분할한다.</p>
+<h3 id="core-types-storage-m1">Core types &amp; storage (M1)</h3>
+<ul>
+<li><code>src/types.ts</code> — <code>Flight</code>, <code>Category</code>, <code>Settings</code>, <code>ActiveFlight</code>, <code>FlightStep</code> 타입</li>
+<li><code>src/lib/id.ts</code> — <code>nanoid()</code> 래퍼, 단순 id 생성</li>
+<li><code>src/lib/storage.ts</code> — localStorage CRUD + 스키마 마이그레이션 + seed-merge</li>
+<li><code>src/lib/storage.test.ts</code> — 저장/복구/누락 필드 merge 테스트</li>
+</ul>
+<h3 id="timer-stats-m1">Timer &amp; stats (M1)</h3>
+<ul>
+<li><code>src/lib/timer.ts</code> — <code>Date.now()</code> 기반 elapsed/remaining 계산</li>
+<li><code>src/lib/timer.test.ts</code> — 시작/일시정지/시계 변경 견딤</li>
+<li><code>src/lib/stats.ts</code> — <code>Flight[]</code> → KPI / weekly / category breakdown</li>
+<li><code>src/lib/stats.test.ts</code> — streak 엣지 + history 1000 초과 + 자정 경계</li>
+</ul>
+<h3 id="state-stores-m1">State stores (M1)</h3>
+<ul>
+<li><code>src/store/flightStore.ts</code> — Zustand: ActiveFlight + history 액션</li>
+<li><code>src/store/flightStore.test.ts</code> — state transitions</li>
+<li><code>src/store/settingsStore.ts</code> — Zustand: Settings + persist via storage.ts</li>
+</ul>
+<h3 id="routing-shell-m1">Routing &amp; shell (M1)</h3>
+<ul>
+<li><code>src/main.tsx</code> — React entry</li>
+<li><code>src/App.tsx</code> — Router 정의</li>
+<li><code>src/routes/Home.tsx</code> — 의식 호스트</li>
+<li><code>src/routes/Stats.tsx</code> — 통계 페이지</li>
+<li><code>src/routes/Settings.tsx</code> — 설정 페이지</li>
+<li><code>index.html</code>, <code>vite.config.ts</code>, <code>tailwind.config.ts</code>, <code>tsconfig.json</code>, <code>package.json</code></li>
+</ul>
+<h3 id="flight-ritual-flow-m2">Flight ritual flow (M2)</h3>
+<ul>
+<li><code>src/flight/FlightMachine.tsx</code> — step 분기 + Framer Motion AnimatePresence</li>
+<li><code>src/flight/steps/Booking.tsx</code> — 시간/카테고리 선택</li>
+<li><code>src/flight/steps/SeatSelection.tsx</code> — 3-6 그리드, 10열 좌석 맵</li>
+<li><code>src/flight/steps/BoardingPass.tsx</code> — 발권된 티켓 카드</li>
+<li><code>src/flight/steps/CheckIn.tsx</code> — stub drag-to-tear</li>
+<li><code>src/flight/steps/InFlight.tsx</code> — 풀스크린 카운트다운</li>
+<li><code>src/flight/steps/Landed.tsx</code> — 완료 화면</li>
+<li><code>src/flight/ResumeModal.tsx</code> — 새로고침 복구</li>
+</ul>
+<h3 id="reusable-components-m2m4">Reusable components (M2/M4)</h3>
+<ul>
+<li><code>src/components/BoardingPassCard.tsx</code> — 보딩패스 UI (CheckIn + InFlight 공유)</li>
+<li><code>src/components/SeatMap.tsx</code> — 좌석 맵 (SeatSelection 사용)</li>
+<li><code>src/components/Countdown.tsx</code> — 큰 시:분:초 디스플레이</li>
+<li><code>src/components/KpiCard.tsx</code> — 통계 카드</li>
+<li><code>src/components/charts/WeeklyBar.tsx</code> — Recharts 막대</li>
+<li><code>src/components/charts/CategoryDonut.tsx</code> — Recharts 도넛</li>
+</ul>
+<h3 id="sound-system-m6">Sound system (M6)</h3>
+<ul>
+<li><code>src/lib/audio.ts</code> — AudioContext + GainNode + 사운드 로더/플레이어</li>
+<li><code>src/lib/audio.test.ts</code> — 게인/볼륨/fallback (jsdom mock)</li>
+<li><code>public/sounds/{takeoff,engine,landing,tear}.mp3</code></li>
+<li><code>public/sounds/CREDITS.md</code></li>
+</ul>
+<h3 id="notifications-polish-m5m7">Notifications &amp; polish (M5/M7)</h3>
+<ul>
+<li><code>src/lib/notifications.ts</code> — Notification API wrapper</li>
+<li><code>src/styles/globals.css</code> — Tailwind 베이스 + 커스텀 keyframes</li>
+</ul>
+<h3 id="integration-tests-각-마일스톤">Integration tests (각 마일스톤)</h3>
+<ul>
+<li><code>tests/flight-full-flow.test.tsx</code> — booking → landed</li>
+<li><code>tests/resume-flow.test.tsx</code> — active 복구 시나리오</li>
+<li><code>tests/sound-cues.test.tsx</code> — 전환별 사운드 호출</li>
+<li><code>tests/stats-empty.test.tsx</code> / <code>stats-with-data.test.tsx</code></li>
+</ul>
+<hr>
+<h2 id="작업-컨벤션">작업 컨벤션</h2>
+<ul>
+<li><strong>TDD</strong>: 모든 task는 실패 테스트 → 최소 구현 → 통과 → 커밋 순서.</li>
+<li><strong>커밋 단위</strong>: 한 task = 한 커밋. 메시지는 conventional commits (<code>feat:</code>, <code>test:</code>, <code>chore:</code> 등).</li>
+<li><strong>테스트 파일 변경 커밋 전</strong>: <code>test-reviewer</code> 호출 (CLAUDE.md 가드레일).</li>
+<li><strong>각 마일스톤 종료 시</strong>: <code>npm run build</code> 통과 + 모든 테스트 green 확인 후 다음 마일스톤으로.</li>
+<li><strong>참조 skills</strong>: <code>@superpowers:test-driven-development</code>, <code>@superpowers:systematic-debugging</code>, <code>@superpowers:verification-before-completion</code>.</li>
+</ul>
+<hr>
+<h2 id="chunk-1-m1-project-skeleton">Chunk 1: M1 — Project Skeleton</h2>
+<p><strong>목표</strong>: Vite + React + TS 초기화, Tailwind/Zustand/Router 셋업, core lib(storage/timer/stats)과 store 작성. 빈 라우트 3개가 동작하고 모든 단위 테스트가 통과한다.</p>
+<h3 id="task-11-vite-프로젝트-초기화">Task 1.1: Vite 프로젝트 초기화</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>package.json</code>, <code>vite.config.ts</code>, <code>tsconfig.json</code>, <code>index.html</code>, <code>src/main.tsx</code>, <code>src/App.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Vite 스캐폴드 실행</strong></p>
+</li>
+</ul>
+<pre><code class="language-bash">cd /Users/overlay/Documents/workspace/resume/sound-project/focusflight-web
+npm create vite@latest . -- --template react-ts
+</code></pre>
+<p>플롬프트가 뜨면 현재 디렉토리에 생성 확인. <code>docs/</code>는 보존됨.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 의존성 설치</strong></li>
+</ul>
+<pre><code class="language-bash">npm install
+npm install react-router-dom zustand framer-motion recharts nanoid clsx
+npm install -D tailwindcss postcss autoprefixer vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @types/node
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: Tailwind init</strong></li>
+</ul>
+<pre><code class="language-bash">npx tailwindcss init -p
+</code></pre>
+<p><code>tailwind.config.js</code> content 배열에 <code>&quot;./index.html&quot;, &quot;./src/**/*.{ts,tsx}&quot;</code> 추가.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 기본 동작 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+<p>브라우저에서 Vite 기본 화면 뜨는지 확인. 종료 후 진행.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: Vitest 설정</strong></li>
+</ul>
+<p><code>vite.config.ts</code>에 test 블록 추가:</p>
+<pre><code class="language-ts">import { defineConfig } from &#39;vitest/config&#39;;
+import react from &#39;@vitejs/plugin-react&#39;;
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: &#39;jsdom&#39;,
+    globals: true,
+    setupFiles: &#39;./src/test-setup.ts&#39;,
+  },
+});
+</code></pre>
+<p><code>src/test-setup.ts</code> 생성:</p>
+<pre><code class="language-ts">import &#39;@testing-library/jest-dom/vitest&#39;;
+</code></pre>
+<p><code>package.json</code> scripts에 <code>&quot;test&quot;: &quot;vitest&quot;</code> 추가.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: 빌드 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm run build
+</code></pre>
+<p><code>dist/</code> 생성되면 OK.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git init
+echo &quot;node_modules\ndist\n.DS_Store&quot; &gt; .gitignore
+git add -A
+git commit -m &quot;chore: scaffold vite + react + ts + tailwind + vitest&quot;
+</code></pre>
+<h3 id="task-12-타입-정의">Task 1.2: 타입 정의</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/types.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 타입 작성</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/types.ts
+
+export type FlightStep = &#39;booking&#39; | &#39;seat&#39; | &#39;boarding&#39; | &#39;checkin&#39; | &#39;inflight&#39; | &#39;landed&#39;;
+
+export type Flight = {
+  id: string;
+  category: string;
+  plannedSeconds: number;
+  actualSeconds: number;
+  seat: string;
+  startedAt: number;
+  completedAt: number | null;
+  status: &#39;completed&#39; | &#39;aborted&#39;;
+};
+
+export type Category = {
+  id: string;
+  label: string;
+  color: string;
+};
+
+export type Settings = {
+  categories: Category[];
+  defaultDurationMinutes: number;
+  notificationsEnabled: boolean;
+  soundEnabled: boolean;
+  volume: number;
+};
+
+export type ActiveFlight = {
+  step: FlightStep;
+  flight: Partial&lt;Flight&gt;;
+};
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/types.ts
+git commit -m &quot;feat: define core types (Flight, Settings, ActiveFlight)&quot;
+</code></pre>
+<h3 id="task-13-storagets-localstorage-추상화-tdd">Task 1.3: storage.ts — localStorage 추상화 (TDD)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/storage.ts</code>, <code>src/lib/storage.test.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 실패 테스트 작성</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/lib/storage.test.ts
+import { describe, it, expect, beforeEach } from &#39;vitest&#39;;
+import { loadSettings, saveSettings, DEFAULT_SETTINGS } from &#39;./storage&#39;;
+
+describe(&#39;storage:settings&#39;, () =&gt; {
+  beforeEach(() =&gt; localStorage.clear());
+
+  it(&#39;returns DEFAULT_SETTINGS when nothing stored&#39;, () =&gt; {
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it(&#39;round-trips a saved Settings object&#39;, () =&gt; {
+    const s = { ...DEFAULT_SETTINGS, volume: 0.3 };
+    saveSettings(s);
+    expect(loadSettings()).toEqual(s);
+  });
+
+  it(&#39;seed-merges missing keys into stored settings&#39;, () =&gt; {
+    // legacy: stored without `volume`
+    const { volume, ...legacy } = DEFAULT_SETTINGS;
+    localStorage.setItem(&#39;focusflight:settings&#39;, JSON.stringify(legacy));
+    expect(loadSettings().volume).toBe(DEFAULT_SETTINGS.volume);
+  });
+
+  it(&#39;falls back to defaults on corrupt JSON&#39;, () =&gt; {
+    localStorage.setItem(&#39;focusflight:settings&#39;, &#39;{not json&#39;);
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 테스트 실패 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- storage.test
+</code></pre>
+<p>Expected: FAIL (&quot;Cannot find module &#39;./storage&#39;&quot;)</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 최소 구현</strong></li>
+</ul>
+<pre><code class="language-ts">// src/lib/storage.ts
+import type { Settings, Flight, ActiveFlight } from &#39;../types&#39;;
+
+export const DEFAULT_SETTINGS: Settings = {
+  categories: [
+    { id: &#39;work&#39;, label: &#39;일&#39;, color: &#39;#F4A261&#39; },
+    { id: &#39;study&#39;, label: &#39;공부&#39;, color: &#39;#2A9D8F&#39; },
+    { id: &#39;reading&#39;, label: &#39;독서&#39;, color: &#39;#E76F51&#39; },
+  ],
+  defaultDurationMinutes: 25,
+  notificationsEnabled: false,
+  soundEnabled: true,
+  volume: 0.6,
+};
+
+const KEY_SETTINGS = &#39;focusflight:settings&#39;;
+const KEY_HISTORY = &#39;focusflight:history&#39;;
+const KEY_ACTIVE = &#39;focusflight:active&#39;;
+const KEY_VERSION = &#39;focusflight:schemaVersion&#39;;
+const CURRENT_VERSION = 1;
+const HISTORY_LIMIT = 1000;
+
+function readJSON&lt;T&gt;(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export function loadSettings(): Settings {
+  const stored = readJSON&lt;Partial&lt;Settings&gt; | null&gt;(KEY_SETTINGS, null);
+  if (!stored) return DEFAULT_SETTINGS;
+  return { ...DEFAULT_SETTINGS, ...stored };
+}
+
+export function saveSettings(s: Settings): void {
+  localStorage.setItem(KEY_SETTINGS, JSON.stringify(s));
+  localStorage.setItem(KEY_VERSION, String(CURRENT_VERSION));
+}
+
+export function loadHistory(): Flight[] {
+  const arr = readJSON&lt;Flight[]&gt;(KEY_HISTORY, []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+export function appendFlight(f: Flight): void {
+  const next = [f, ...loadHistory()].slice(0, HISTORY_LIMIT);
+  localStorage.setItem(KEY_HISTORY, JSON.stringify(next));
+}
+
+export function loadActive(): ActiveFlight | null {
+  return readJSON&lt;ActiveFlight | null&gt;(KEY_ACTIVE, null);
+}
+
+export function saveActive(a: ActiveFlight | null): void {
+  if (a === null) localStorage.removeItem(KEY_ACTIVE);
+  else localStorage.setItem(KEY_ACTIVE, JSON.stringify(a));
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 테스트 통과 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- storage.test
+</code></pre>
+<p>Expected: PASS 4 tests</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: history &amp; active 테스트 추가</strong></li>
+</ul>
+<pre><code class="language-ts">describe(&#39;storage:history&#39;, () =&gt; {
+  beforeEach(() =&gt; localStorage.clear());
+
+  it(&#39;appends flight at front, returns empty when none&#39;, () =&gt; {
+    expect(loadHistory()).toEqual([]);
+    const f = { id: &#39;1&#39;, category: &#39;work&#39;, plannedSeconds: 1500, actualSeconds: 1500, seat: &#39;1A&#39;, startedAt: 0, completedAt: 10, status: &#39;completed&#39; as const };
+    appendFlight(f);
+    expect(loadHistory()).toEqual([f]);
+  });
+
+  it(&#39;evicts oldest after HISTORY_LIMIT (1000)&#39;, () =&gt; {
+    for (let i = 0; i &lt; 1002; i++) {
+      appendFlight({ id: String(i), category: &#39;work&#39;, plannedSeconds: 60, actualSeconds: 60, seat: &#39;1A&#39;, startedAt: i, completedAt: i, status: &#39;completed&#39; });
+    }
+    const h = loadHistory();
+    expect(h.length).toBe(1000);
+    expect(h[0].id).toBe(&#39;1001&#39;); // newest first
+    expect(h[999].id).toBe(&#39;2&#39;);
+  });
+});
+
+describe(&#39;storage:active&#39;, () =&gt; {
+  beforeEach(() =&gt; localStorage.clear());
+
+  it(&#39;saves and clears active flight&#39;, () =&gt; {
+    expect(loadActive()).toBeNull();
+    const a: ActiveFlight = { step: &#39;inflight&#39;, flight: { id: &#39;x&#39;, seat: &#39;5C&#39; } };
+    saveActive(a);
+    expect(loadActive()).toEqual(a);
+    saveActive(null);
+    expect(loadActive()).toBeNull();
+  });
+});
+</code></pre>
+<pre><code class="language-bash">npm test -- storage.test
+</code></pre>
+<p>Expected: 모든 테스트 PASS</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: test-reviewer 호출 후 Commit</strong></li>
+</ul>
+<p><code>test-reviewer</code>를 호출해 CRITICAL 없으면 commit:</p>
+<pre><code class="language-bash">git add src/lib/storage.ts src/lib/storage.test.ts
+git commit -m &quot;feat: localStorage abstraction with seed-merge and history eviction&quot;
+</code></pre>
+<h3 id="task-14-timerts-datenow-기반-카운트-tdd">Task 1.4: timer.ts — Date.now() 기반 카운트 (TDD)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/timer.ts</code>, <code>src/lib/timer.test.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 실패 테스트</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/lib/timer.test.ts
+import { describe, it, expect, vi, beforeEach, afterEach } from &#39;vitest&#39;;
+import { elapsedSeconds, remainingSeconds, isExpired } from &#39;./timer&#39;;
+
+describe(&#39;timer&#39;, () =&gt; {
+  beforeEach(() =&gt; vi.useFakeTimers().setSystemTime(new Date(&#39;2026-05-18T10:00:00Z&#39;)));
+  afterEach(() =&gt; vi.useRealTimers());
+
+  it(&#39;elapsed returns 0 at start&#39;, () =&gt; {
+    expect(elapsedSeconds(Date.now())).toBe(0);
+  });
+
+  it(&#39;elapsed reflects wall clock passage&#39;, () =&gt; {
+    const start = Date.now();
+    vi.advanceTimersByTime(45_000);
+    expect(elapsedSeconds(start)).toBe(45);
+  });
+
+  it(&#39;remaining is planned - elapsed, never negative&#39;, () =&gt; {
+    const start = Date.now();
+    vi.advanceTimersByTime(30_000);
+    expect(remainingSeconds(start, 60)).toBe(30);
+    vi.advanceTimersByTime(60_000);
+    expect(remainingSeconds(start, 60)).toBe(0);
+  });
+
+  it(&#39;isExpired true when elapsed &gt;= planned&#39;, () =&gt; {
+    const start = Date.now();
+    expect(isExpired(start, 60)).toBe(false);
+    vi.advanceTimersByTime(60_000);
+    expect(isExpired(start, 60)).toBe(true);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 실패 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- timer.test
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 구현</strong></li>
+</ul>
+<pre><code class="language-ts">// src/lib/timer.ts
+export function elapsedSeconds(startedAt: number): number {
+  return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+}
+
+export function remainingSeconds(startedAt: number, plannedSeconds: number): number {
+  return Math.max(0, plannedSeconds - elapsedSeconds(startedAt));
+}
+
+export function isExpired(startedAt: number, plannedSeconds: number): boolean {
+  return elapsedSeconds(startedAt) &gt;= plannedSeconds;
+}
+
+export function formatMMSS(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, &#39;0&#39;)}:${String(s).padStart(2, &#39;0&#39;)}`;
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: formatMMSS 테스트 추가</strong></li>
+</ul>
+<pre><code class="language-ts">describe(&#39;formatMMSS&#39;, () =&gt; {
+  it(&#39;formats common durations&#39;, () =&gt; {
+    expect(formatMMSS(0)).toBe(&#39;00:00&#39;);
+    expect(formatMMSS(59)).toBe(&#39;00:59&#39;);
+    expect(formatMMSS(60)).toBe(&#39;01:00&#39;);
+    expect(formatMMSS(1500)).toBe(&#39;25:00&#39;);
+    expect(formatMMSS(3725)).toBe(&#39;62:05&#39;);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: 통과 확인 + test-reviewer + commit</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- timer.test
+git add src/lib/timer.ts src/lib/timer.test.ts
+git commit -m &quot;feat: wall-clock-based timer utilities&quot;
+</code></pre>
+<h3 id="task-15-statsts-kpi주간도넛-derivation-tdd">Task 1.5: stats.ts — KPI/주간/도넛 derivation (TDD)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/stats.ts</code>, <code>src/lib/stats.test.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 실패 테스트 — KPI</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/lib/stats.test.ts
+import { describe, it, expect, vi, beforeEach, afterEach } from &#39;vitest&#39;;
+import { weeklyFocusSeconds, streakDays, averageFlightSeconds, weeklyByDay, categoryBreakdown } from &#39;./stats&#39;;
+import type { Flight } from &#39;../types&#39;;
+
+const f = (over: Partial&lt;Flight&gt;): Flight =&gt; ({
+  id: &#39;x&#39;, category: &#39;work&#39;, plannedSeconds: 1500, actualSeconds: 1500,
+  seat: &#39;1A&#39;, startedAt: 0, completedAt: 0, status: &#39;completed&#39;, ...over,
+});
+
+describe(&#39;stats:weeklyFocusSeconds&#39;, () =&gt; {
+  beforeEach(() =&gt; vi.useFakeTimers().setSystemTime(new Date(&#39;2026-05-18T10:00:00&#39;)));  // 월요일
+  afterEach(() =&gt; vi.useRealTimers());
+
+  it(&#39;sums actualSeconds for completed flights this week (local Mon-Sun)&#39;, () =&gt; {
+    const monday = new Date(&#39;2026-05-18T09:00:00&#39;).getTime();
+    const sunday = new Date(&#39;2026-05-24T09:00:00&#39;).getTime();
+    const lastWeek = new Date(&#39;2026-05-11T09:00:00&#39;).getTime();
+    const history = [
+      f({ completedAt: monday, actualSeconds: 1500 }),
+      f({ completedAt: sunday, actualSeconds: 600 }),
+      f({ completedAt: lastWeek, actualSeconds: 9999 }),
+    ];
+    expect(weeklyFocusSeconds(history)).toBe(2100);
+  });
+
+  it(&#39;ignores aborted flights&#39;, () =&gt; {
+    const t = new Date(&#39;2026-05-18T11:00:00&#39;).getTime();
+    expect(weeklyFocusSeconds([f({ completedAt: t, actualSeconds: 600, status: &#39;aborted&#39; })])).toBe(0);
+  });
+});
+
+describe(&#39;stats:streakDays&#39;, () =&gt; {
+  beforeEach(() =&gt; vi.useFakeTimers().setSystemTime(new Date(&#39;2026-05-18T15:00:00&#39;)));
+  afterEach(() =&gt; vi.useRealTimers());
+
+  const day = (d: string) =&gt; new Date(d).getTime();
+
+  it(&#39;is 0 when no flights&#39;, () =&gt; {
+    expect(streakDays([])).toBe(0);
+  });
+
+  it(&#39;counts today if today has a completed flight&#39;, () =&gt; {
+    expect(streakDays([f({ completedAt: day(&#39;2026-05-18T10:00:00&#39;) })])).toBe(1);
+  });
+
+  it(&#39;counts back from yesterday if no flight today&#39;, () =&gt; {
+    const h = [
+      f({ id: &#39;a&#39;, completedAt: day(&#39;2026-05-17T10:00:00&#39;) }),
+      f({ id: &#39;b&#39;, completedAt: day(&#39;2026-05-16T10:00:00&#39;) }),
+    ];
+    expect(streakDays(h)).toBe(2);
+  });
+
+  it(&#39;breaks on gap&#39;, () =&gt; {
+    const h = [
+      f({ id: &#39;a&#39;, completedAt: day(&#39;2026-05-17T10:00:00&#39;) }),
+      f({ id: &#39;b&#39;, completedAt: day(&#39;2026-05-15T10:00:00&#39;) }), // 5/16 빠짐
+    ];
+    expect(streakDays(h)).toBe(1);
+  });
+
+  it(&#39;ignores aborted&#39;, () =&gt; {
+    expect(streakDays([f({ status: &#39;aborted&#39;, completedAt: day(&#39;2026-05-18T10:00:00&#39;) })])).toBe(0);
+  });
+});
+
+describe(&#39;stats:averageFlightSeconds&#39;, () =&gt; {
+  it(&#39;averages only completed&#39;, () =&gt; {
+    expect(averageFlightSeconds([
+      f({ id: &#39;a&#39;, actualSeconds: 1500 }),
+      f({ id: &#39;b&#39;, actualSeconds: 900 }),
+      f({ id: &#39;c&#39;, actualSeconds: 9999, status: &#39;aborted&#39; }),
+    ])).toBe(1200);
+  });
+
+  it(&#39;returns 0 when no completed flights&#39;, () =&gt; {
+    expect(averageFlightSeconds([])).toBe(0);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 실패 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- stats.test
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 구현</strong></li>
+</ul>
+<pre><code class="language-ts">// src/lib/stats.ts
+import type { Flight } from &#39;../types&#39;;
+
+function startOfLocalDay(t: number): number {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function startOfWeekMonday(t: number): number {
+  const d = new Date(t);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay() || 7;  // 일=0→7
+  d.setDate(d.getDate() - (day - 1));
+  return d.getTime();
+}
+
+const DAY_MS = 86_400_000;
+const WEEK_MS = 7 * DAY_MS;
+
+export function weeklyFocusSeconds(history: Flight[]): number {
+  const weekStart = startOfWeekMonday(Date.now());
+  const weekEnd = weekStart + WEEK_MS;
+  return history
+    .filter(f =&gt; f.status === &#39;completed&#39; &amp;&amp; f.completedAt != null &amp;&amp; f.completedAt &gt;= weekStart &amp;&amp; f.completedAt &lt; weekEnd)
+    .reduce((s, f) =&gt; s + f.actualSeconds, 0);
+}
+
+export function streakDays(history: Flight[]): number {
+  const days = new Set&lt;number&gt;();
+  for (const f of history) {
+    if (f.status !== &#39;completed&#39; || f.completedAt == null) continue;
+    days.add(startOfLocalDay(f.completedAt));
+  }
+  if (days.size === 0) return 0;
+
+  const today = startOfLocalDay(Date.now());
+  let cursor = days.has(today) ? today : today - DAY_MS;
+  if (!days.has(cursor)) return 0;
+
+  let count = 0;
+  while (days.has(cursor)) {
+    count++;
+    cursor -= DAY_MS;
+  }
+  return count;
+}
+
+export function averageFlightSeconds(history: Flight[]): number {
+  const completed = history.filter(f =&gt; f.status === &#39;completed&#39;);
+  if (completed.length === 0) return 0;
+  return Math.round(completed.reduce((s, f) =&gt; s + f.actualSeconds, 0) / completed.length);
+}
+
+export type WeeklyByDay = { dayLabel: string; categories: Record&lt;string, number&gt; };
+
+export function weeklyByDay(history: Flight[]): WeeklyByDay[] {
+  const labels = [&#39;월&#39;, &#39;화&#39;, &#39;수&#39;, &#39;목&#39;, &#39;금&#39;, &#39;토&#39;, &#39;일&#39;];
+  const weekStart = startOfWeekMonday(Date.now());
+  const out: WeeklyByDay[] = labels.map(l =&gt; ({ dayLabel: l, categories: {} }));
+  for (const f of history) {
+    if (f.status !== &#39;completed&#39; || f.completedAt == null) continue;
+    const diffDays = Math.floor((startOfLocalDay(f.completedAt) - weekStart) / DAY_MS);
+    if (diffDays &lt; 0 || diffDays &gt; 6) continue;
+    const bucket = out[diffDays].categories;
+    bucket[f.category] = (bucket[f.category] || 0) + f.actualSeconds;
+  }
+  return out;
+}
+
+export function categoryBreakdown(history: Flight[], sinceMs: number = 0): Record&lt;string, number&gt; {
+  const out: Record&lt;string, number&gt; = {};
+  for (const f of history) {
+    if (f.status !== &#39;completed&#39; || f.completedAt == null) continue;
+    if (f.completedAt &lt; sinceMs) continue;
+    out[f.category] = (out[f.category] || 0) + f.actualSeconds;
+  }
+  return out;
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: weeklyByDay &amp; categoryBreakdown 테스트 추가</strong></li>
+</ul>
+<pre><code class="language-ts">describe(&#39;stats:weeklyByDay&#39;, () =&gt; {
+  beforeEach(() =&gt; vi.useFakeTimers().setSystemTime(new Date(&#39;2026-05-20T10:00:00&#39;)));  // 수요일
+  afterEach(() =&gt; vi.useRealTimers());
+
+  it(&#39;buckets minutes per (day, category)&#39;, () =&gt; {
+    const wed = new Date(&#39;2026-05-20T09:00:00&#39;).getTime();
+    const result = weeklyByDay([
+      f({ completedAt: wed, category: &#39;work&#39;, actualSeconds: 1500 }),
+      f({ completedAt: wed, category: &#39;study&#39;, actualSeconds: 600 }),
+    ]);
+    expect(result[2].categories).toEqual({ work: 1500, study: 600 });
+    expect(result[0].dayLabel).toBe(&#39;월&#39;);
+  });
+});
+
+describe(&#39;stats:categoryBreakdown&#39;, () =&gt; {
+  it(&#39;sums actualSeconds per category&#39;, () =&gt; {
+    expect(categoryBreakdown([
+      f({ category: &#39;work&#39;, actualSeconds: 1500 }),
+      f({ category: &#39;work&#39;, actualSeconds: 600 }),
+      f({ category: &#39;study&#39;, actualSeconds: 300 }),
+    ])).toEqual({ work: 2100, study: 300 });
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: 통과 확인 + test-reviewer + commit</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- stats.test
+git add src/lib/stats.ts src/lib/stats.test.ts
+git commit -m &quot;feat: stats derivation (weekly/streak/avg/byDay/category)&quot;
+</code></pre>
+<h3 id="task-16-flightstore-zustand-state-machine">Task 1.6: flightStore — Zustand state machine</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/store/flightStore.ts</code>, <code>src/store/flightStore.test.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 실패 테스트</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/store/flightStore.test.ts
+import { describe, it, expect, beforeEach } from &#39;vitest&#39;;
+import { useFlightStore } from &#39;./flightStore&#39;;
+
+describe(&#39;flightStore&#39;, () =&gt; {
+  beforeEach(() =&gt; {
+    localStorage.clear();
+    useFlightStore.setState({ active: null, lastCompleted: null });
+  });
+
+  it(&#39;starts with no active flight and no lastCompleted&#39;, () =&gt; {
+    expect(useFlightStore.getState().active).toBeNull();
+    expect(useFlightStore.getState().lastCompleted).toBeNull();
+  });
+
+  it(&#39;startBooking creates active in booking step&#39;, () =&gt; {
+    useFlightStore.getState().startBooking();
+    expect(useFlightStore.getState().active?.step).toBe(&#39;booking&#39;);
+  });
+
+  it(&#39;chooses duration/category then advances to seat&#39;, () =&gt; {
+    const s = useFlightStore.getState();
+    s.startBooking();
+    s.setDuration(25);
+    s.setCategory(&#39;work&#39;);
+    s.advance();
+    expect(useFlightStore.getState().active?.step).toBe(&#39;seat&#39;);
+    expect(useFlightStore.getState().active?.flight.plannedSeconds).toBe(1500);
+    expect(useFlightStore.getState().active?.flight.category).toBe(&#39;work&#39;);
+  });
+
+  it(&#39;abort clears active without appending history&#39;, () =&gt; {
+    const s = useFlightStore.getState();
+    s.startBooking();
+    s.abort();
+    expect(useFlightStore.getState().active).toBeNull();
+  });
+
+  it(&#39;startFlight sets startedAt and moves to inflight&#39;, () =&gt; {
+    const s = useFlightStore.getState();
+    s.startBooking(); s.setDuration(25); s.setCategory(&#39;work&#39;); s.advance();
+    s.setSeat(&#39;12A&#39;); s.advance(); // boarding
+    s.advance(); // checkin
+    s.startFlight();
+    expect(useFlightStore.getState().active?.step).toBe(&#39;inflight&#39;);
+    expect(useFlightStore.getState().active?.flight.startedAt).toBeTruthy();
+  });
+
+  it(&#39;land completes flight, appends to history, clears active, sets lastCompleted&#39;, () =&gt; {
+    const s = useFlightStore.getState();
+    s.startBooking(); s.setDuration(25); s.setCategory(&#39;work&#39;);
+    s.advance(); s.setSeat(&#39;12A&#39;); s.advance(); s.advance(); s.startFlight();
+    s.land();
+    expect(useFlightStore.getState().active).toBeNull();
+    expect(useFlightStore.getState().lastCompleted?.category).toBe(&#39;work&#39;);
+    expect(useFlightStore.getState().lastCompleted?.seat).toBe(&#39;12A&#39;);
+  });
+
+  it(&#39;dismissLanded clears the post-flight screen&#39;, () =&gt; {
+    useFlightStore.setState({ lastCompleted: { id: &#39;x&#39;, category: &#39;work&#39;, plannedSeconds: 60, actualSeconds: 60, seat: &#39;1A&#39;, startedAt: 0, completedAt: 60, status: &#39;completed&#39; } });
+    useFlightStore.getState().dismissLanded();
+    expect(useFlightStore.getState().lastCompleted).toBeNull();
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 실패 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- flightStore.test
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 구현</strong></li>
+</ul>
+<pre><code class="language-ts">// src/store/flightStore.ts
+import { create } from &#39;zustand&#39;;
+import type { ActiveFlight, Flight, FlightStep } from &#39;../types&#39;;
+import { appendFlight, loadActive, saveActive } from &#39;../lib/storage&#39;;
+import { nanoid } from &#39;nanoid&#39;;
+import { elapsedSeconds } from &#39;../lib/timer&#39;;
+
+const ORDER: FlightStep[] = [&#39;booking&#39;, &#39;seat&#39;, &#39;boarding&#39;, &#39;checkin&#39;, &#39;inflight&#39;, &#39;landed&#39;];
+
+type State = {
+  active: ActiveFlight | null;
+  lastCompleted: Flight | null;   // 직전 완료된 비행 (Landed 화면 표시용, UI dismissal 시 null)
+  startBooking: () =&gt; void;
+  setDuration: (minutes: number) =&gt; void;
+  setCategory: (id: string) =&gt; void;
+  setSeat: (seat: string) =&gt; void;
+  advance: () =&gt; void;
+  startFlight: () =&gt; void;
+  land: () =&gt; void;
+  abort: () =&gt; void;
+  hydrate: () =&gt; void;
+  dismissLanded: () =&gt; void;
+};
+
+function persist(active: ActiveFlight | null) {
+  saveActive(active);
+}
+
+export const useFlightStore = create&lt;State&gt;((set, get) =&gt; ({
+  active: null,
+  lastCompleted: null,
+
+  hydrate: () =&gt; {
+    const a = loadActive();
+    set({ active: a });
+  },
+
+  dismissLanded: () =&gt; set({ lastCompleted: null }),
+
+  startBooking: () =&gt; {
+    const a: ActiveFlight = { step: &#39;booking&#39;, flight: { id: nanoid(8) } };
+    set({ active: a }); persist(a);
+  },
+
+  setDuration: (minutes) =&gt; set(s =&gt; {
+    if (!s.active) return s;
+    const a = { ...s.active, flight: { ...s.active.flight, plannedSeconds: minutes * 60 } };
+    persist(a); return { active: a };
+  }),
+
+  setCategory: (id) =&gt; set(s =&gt; {
+    if (!s.active) return s;
+    const a = { ...s.active, flight: { ...s.active.flight, category: id } };
+    persist(a); return { active: a };
+  }),
+
+  setSeat: (seat) =&gt; set(s =&gt; {
+    if (!s.active) return s;
+    const a = { ...s.active, flight: { ...s.active.flight, seat } };
+    persist(a); return { active: a };
+  }),
+
+  advance: () =&gt; set(s =&gt; {
+    if (!s.active) return s;
+    const idx = ORDER.indexOf(s.active.step);
+    const next = ORDER[Math.min(idx + 1, ORDER.length - 1)];
+    const a = { ...s.active, step: next };
+    persist(a); return { active: a };
+  }),
+
+  startFlight: () =&gt; set(s =&gt; {
+    if (!s.active) return s;
+    const a: ActiveFlight = {
+      step: &#39;inflight&#39;,
+      flight: { ...s.active.flight, startedAt: Date.now() },
+    };
+    persist(a); return { active: a };
+  }),
+
+  land: () =&gt; {
+    const a = get().active;
+    if (!a || !a.flight.startedAt || !a.flight.plannedSeconds || !a.flight.category || !a.flight.seat) {
+      set({ active: null }); persist(null); return;
+    }
+    const completedAt = Date.now();
+    const actualSeconds = Math.min(elapsedSeconds(a.flight.startedAt), a.flight.plannedSeconds);
+    const flight: Flight = {
+      id: a.flight.id || nanoid(8),
+      category: a.flight.category,
+      plannedSeconds: a.flight.plannedSeconds,
+      actualSeconds,
+      seat: a.flight.seat,
+      startedAt: a.flight.startedAt,
+      completedAt,
+      status: &#39;completed&#39;,
+    };
+    appendFlight(flight);
+    set({ active: null, lastCompleted: flight }); persist(null);
+  },
+
+  abort: () =&gt; { set({ active: null }); persist(null); },
+}));
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 통과 확인 + test-reviewer + commit</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- flightStore.test
+git add src/store/flightStore.ts src/store/flightStore.test.ts
+git commit -m &quot;feat: flight state machine store (booking → landed)&quot;
+</code></pre>
+<h3 id="task-17-settingsstore-router-skeleton-빈-라우트">Task 1.7: settingsStore + Router skeleton + 빈 라우트</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/store/settingsStore.ts</code>, <code>src/App.tsx</code> (overwrite), <code>src/routes/{Home,Stats,Settings}.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: settingsStore (테스트는 storage 테스트로 커버됨)</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/store/settingsStore.ts
+import { create } from &#39;zustand&#39;;
+import { loadSettings, saveSettings, DEFAULT_SETTINGS } from &#39;../lib/storage&#39;;
+import type { Settings, Category } from &#39;../types&#39;;
+
+type State = {
+  settings: Settings;
+  setVolume: (v: number) =&gt; void;
+  setSoundEnabled: (b: boolean) =&gt; void;
+  setNotificationsEnabled: (b: boolean) =&gt; void;
+  setDefaultDuration: (m: number) =&gt; void;
+  addCategory: (c: Category) =&gt; void;
+  removeCategory: (id: string) =&gt; void;
+};
+
+function commit(next: Settings) {
+  saveSettings(next);
+  return next;
+}
+
+export const useSettingsStore = create&lt;State&gt;((set, get) =&gt; ({
+  settings: loadSettings() ?? DEFAULT_SETTINGS,
+  setVolume: (v) =&gt; set({ settings: commit({ ...get().settings, volume: Math.max(0, Math.min(1, v)) }) }),
+  setSoundEnabled: (b) =&gt; set({ settings: commit({ ...get().settings, soundEnabled: b }) }),
+  setNotificationsEnabled: (b) =&gt; set({ settings: commit({ ...get().settings, notificationsEnabled: b }) }),
+  setDefaultDuration: (m) =&gt; set({ settings: commit({ ...get().settings, defaultDurationMinutes: m }) }),
+  addCategory: (c) =&gt; set({ settings: commit({ ...get().settings, categories: [...get().settings.categories, c] }) }),
+  removeCategory: (id) =&gt; set({ settings: commit({ ...get().settings, categories: get().settings.categories.filter(c =&gt; c.id !== id) }) }),
+}));
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 빈 라우트 생성</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/routes/Home.tsx
+export default function Home() {
+  return &lt;div className=&quot;p-8 text-2xl&quot;&gt;Home (TBD)&lt;/div&gt;;
+}
+// src/routes/Stats.tsx
+export default function Stats() {
+  return &lt;div className=&quot;p-8 text-2xl&quot;&gt;Stats (TBD)&lt;/div&gt;;
+}
+// src/routes/Settings.tsx
+export default function Settings() {
+  return &lt;div className=&quot;p-8 text-2xl&quot;&gt;Settings (TBD)&lt;/div&gt;;
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: App.tsx 작성</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/App.tsx
+import { BrowserRouter, Routes, Route, Link } from &#39;react-router-dom&#39;;
+import Home from &#39;./routes/Home&#39;;
+import Stats from &#39;./routes/Stats&#39;;
+import Settings from &#39;./routes/Settings&#39;;
+
+export default function App() {
+  return (
+    &lt;BrowserRouter&gt;
+      &lt;nav className=&quot;p-4 bg-slate-900 text-white flex gap-4&quot;&gt;
+        &lt;Link to=&quot;/&quot;&gt;Home&lt;/Link&gt;
+        &lt;Link to=&quot;/stats&quot;&gt;Stats&lt;/Link&gt;
+        &lt;Link to=&quot;/settings&quot;&gt;Settings&lt;/Link&gt;
+      &lt;/nav&gt;
+      &lt;Routes&gt;
+        &lt;Route path=&quot;/&quot; element={&lt;Home /&gt;} /&gt;
+        &lt;Route path=&quot;/stats&quot; element={&lt;Stats /&gt;} /&gt;
+        &lt;Route path=&quot;/settings&quot; element={&lt;Settings /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/BrowserRouter&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 동작 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+<p>3개 라우트 이동 가능한지 확인.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: 빌드 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm run build
+git add -A
+git commit -m &quot;feat: router skeleton + settings store + empty route stubs&quot;
+</code></pre>
+<h3 id="task-18-m1-종료-체크">Task 1.8: M1 종료 체크</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 1: 모든 테스트 통과</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- --run
+</code></pre>
+<p>Expected: 모든 단위 테스트 PASS</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 빌드 통과</strong></li>
+</ul>
+<pre><code class="language-bash">npm run build
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 마일스톤 커밋 (없으면 skip)</strong></li>
+</ul>
+<pre><code class="language-bash">git log --oneline | head -20
+</code></pre>
+<p>7~8 커밋이 보이면 M1 완료.</p>
+<hr>
+<h2 id="chunk-2-m2-core-flight-flow">Chunk 2: M2 — Core Flight Flow</h2>
+<p><strong>목표</strong>: booking → seat → boarding → checkin → inflight → landed 6단계가 실제로 동작. 스타일은 최소. localStorage에 active 영속화는 M1에서 storage로 이미 구현됨.</p>
+<h3 id="task-21-flightmachine-컨테이너">Task 2.1: FlightMachine 컨테이너</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/flight/FlightMachine.tsx</code></p>
+</li>
+<li><p>Modify: <code>src/routes/Home.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: FlightMachine 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/flight/FlightMachine.tsx
+import { useEffect } from &#39;react&#39;;
+import { useFlightStore } from &#39;../store/flightStore&#39;;
+import Booking from &#39;./steps/Booking&#39;;
+import SeatSelection from &#39;./steps/SeatSelection&#39;;
+import BoardingPass from &#39;./steps/BoardingPass&#39;;
+import CheckIn from &#39;./steps/CheckIn&#39;;
+import InFlight from &#39;./steps/InFlight&#39;;
+import Landed from &#39;./steps/Landed&#39;;
+
+export default function FlightMachine() {
+  const { active, hydrate, startBooking } = useFlightStore();
+
+  useEffect(() =&gt; { hydrate(); }, [hydrate]);
+
+  if (!active) {
+    return (
+      &lt;div className=&quot;p-8 text-center&quot;&gt;
+        &lt;h1 className=&quot;text-3xl font-bold mb-6&quot;&gt;FocusFlight&lt;/h1&gt;
+        &lt;button onClick={startBooking} className=&quot;bg-orange-500 text-white px-6 py-3 rounded-lg&quot;&gt;
+          Book a flight
+        &lt;/button&gt;
+      &lt;/div&gt;
+    );
+  }
+
+  switch (active.step) {
+    case &#39;booking&#39;: return &lt;Booking /&gt;;
+    case &#39;seat&#39;: return &lt;SeatSelection /&gt;;
+    case &#39;boarding&#39;: return &lt;BoardingPass /&gt;;
+    case &#39;checkin&#39;: return &lt;CheckIn /&gt;;
+    case &#39;inflight&#39;: return &lt;InFlight /&gt;;
+    case &#39;landed&#39;: return &lt;Landed /&gt;;
+  }
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Home 라우트가 FlightMachine 호스트</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/routes/Home.tsx
+import FlightMachine from &#39;../flight/FlightMachine&#39;;
+export default function Home() {
+  return &lt;FlightMachine /&gt;;
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 빈 step 컴포넌트 생성 (각 파일)</strong></li>
+</ul>
+<p>각 파일은 placeholder. 자세한 구현은 다음 task에서.</p>
+<pre><code class="language-tsx">// src/flight/steps/Booking.tsx
+export default function Booking() { return &lt;div className=&quot;p-8&quot;&gt;Booking step&lt;/div&gt;; }
+// 동일 패턴으로 SeatSelection, BoardingPass, CheckIn, InFlight, Landed 생성
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 동작 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+<p>&quot;Book a flight&quot; 버튼 클릭 → Booking step 표시 확인.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: FlightMachine container with step placeholders&quot;
+</code></pre>
+<h3 id="task-22-booking-step-시간카테고리-선택">Task 2.2: Booking step — 시간/카테고리 선택</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/Booking.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/Booking.tsx
+import { useState } from &#39;react&#39;;
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import { useSettingsStore } from &#39;../../store/settingsStore&#39;;
+
+const DURATIONS = [15, 25, 45, 60, 90];
+
+export default function Booking() {
+  const { active, setDuration, setCategory, advance, abort } = useFlightStore();
+  const { settings } = useSettingsStore();
+  const [custom, setCustom] = useState(&#39;&#39;);
+
+  const selectedDuration = active?.flight.plannedSeconds ? active.flight.plannedSeconds / 60 : null;
+  const selectedCategory = active?.flight.category;
+
+  const canProceed = !!selectedDuration &amp;&amp; !!selectedCategory;
+
+  return (
+    &lt;div className=&quot;max-w-xl mx-auto p-8 space-y-8&quot;&gt;
+      &lt;h2 className=&quot;text-2xl font-bold&quot;&gt;Book your flight&lt;/h2&gt;
+
+      &lt;section&gt;
+        &lt;h3 className=&quot;text-sm uppercase tracking-wider mb-3&quot;&gt;Duration&lt;/h3&gt;
+        &lt;div className=&quot;flex flex-wrap gap-2&quot;&gt;
+          {DURATIONS.map(d =&gt; (
+            &lt;button key={d}
+              onClick={() =&gt; setDuration(d)}
+              className={`px-4 py-2 rounded-lg border ${selectedDuration === d ? &#39;bg-orange-500 text-white border-orange-500&#39; : &#39;border-slate-300&#39;}`}&gt;
+              {d} min
+            &lt;/button&gt;
+          ))}
+          &lt;input type=&quot;number&quot; min={1} max={300} placeholder=&quot;custom&quot;
+            value={custom}
+            onChange={e =&gt; setCustom(e.target.value)}
+            onBlur={() =&gt; { const n = parseInt(custom); if (n &gt; 0) setDuration(n); }}
+            className=&quot;px-3 py-2 border border-slate-300 rounded-lg w-24&quot; /&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section&gt;
+        &lt;h3 className=&quot;text-sm uppercase tracking-wider mb-3&quot;&gt;Category&lt;/h3&gt;
+        &lt;div className=&quot;flex flex-wrap gap-2&quot;&gt;
+          {settings.categories.map(c =&gt; (
+            &lt;button key={c.id}
+              onClick={() =&gt; setCategory(c.id)}
+              className={`px-4 py-2 rounded-lg border ${selectedCategory === c.id ? &#39;text-white border-transparent&#39; : &#39;border-slate-300&#39;}`}
+              style={selectedCategory === c.id ? { backgroundColor: c.color } : {}}&gt;
+              {c.label}
+            &lt;/button&gt;
+          ))}
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;div className=&quot;flex gap-3 justify-end&quot;&gt;
+        &lt;button onClick={abort} className=&quot;px-4 py-2 text-slate-500&quot;&gt;Cancel&lt;/button&gt;
+        &lt;button onClick={advance} disabled={!canProceed}
+          className=&quot;bg-orange-500 text-white px-6 py-2 rounded-lg disabled:opacity-40&quot;&gt;
+          Next: Choose seat →
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 통합 테스트</strong></li>
+</ul>
+<pre><code class="language-tsx">// tests/booking-step.test.tsx
+import { describe, it, expect, beforeEach } from &#39;vitest&#39;;
+import { render, screen } from &#39;@testing-library/react&#39;;
+import userEvent from &#39;@testing-library/user-event&#39;;
+import { BrowserRouter } from &#39;react-router-dom&#39;;
+import App from &#39;../src/App&#39;;
+import { useFlightStore } from &#39;../src/store/flightStore&#39;;
+
+describe(&#39;Booking step&#39;, () =&gt; {
+  beforeEach(() =&gt; {
+    localStorage.clear();
+    useFlightStore.setState({ active: null });
+  });
+
+  it(&#39;advances to seat after duration + category chosen&#39;, async () =&gt; {
+    const user = userEvent.setup();
+    render(&lt;App /&gt;);
+    await user.click(screen.getByText(&#39;Book a flight&#39;));
+    await user.click(screen.getByText(&#39;25 min&#39;));
+    await user.click(screen.getByText(&#39;일&#39;));
+    await user.click(screen.getByText(/Next: Choose seat/));
+    expect(useFlightStore.getState().active?.step).toBe(&#39;seat&#39;);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 통과 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- booking-step
+git add -A
+git commit -m &quot;feat: Booking step (duration + category)&quot;
+</code></pre>
+<h3 id="task-23-seatselection-3-6-그리드">Task 2.3: SeatSelection — 3-6 그리드</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/SeatMap.tsx</code></p>
+</li>
+<li><p>Modify: <code>src/flight/steps/SeatSelection.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: SeatMap 컴포넌트</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/SeatMap.tsx
+const ROWS = 10;
+const COLS = [&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;] as const;
+
+type Props = {
+  selected: string | null;
+  recentlyUsed: Set&lt;string&gt;;
+  onSelect: (seat: string) =&gt; void;
+};
+
+export default function SeatMap({ selected, recentlyUsed, onSelect }: Props) {
+  return (
+    &lt;div className=&quot;grid grid-cols-6 gap-2 max-w-xs mx-auto&quot;&gt;
+      {Array.from({ length: ROWS }, (_, r) =&gt; COLS.map(c =&gt; {
+        const label = (r + 1) + c;
+        const isSel = label === selected;
+        const isUsed = recentlyUsed.has(label);
+        return (
+          &lt;button key={label} onClick={() =&gt; onSelect(label)}
+            className={`aspect-square rounded text-xs font-mono ${
+              isSel ? &#39;bg-orange-500 text-white ring-2 ring-orange-300&#39; :
+              isUsed ? &#39;bg-slate-200 text-slate-400&#39; :
+              &#39;bg-slate-100 hover:bg-slate-200&#39;
+            }`}&gt;
+            {label}
+          &lt;/button&gt;
+        );
+      })).flat()}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: SeatSelection step</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/SeatSelection.tsx
+import { useMemo } from &#39;react&#39;;
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import { loadHistory } from &#39;../../lib/storage&#39;;
+import SeatMap from &#39;../../components/SeatMap&#39;;
+
+export default function SeatSelection() {
+  const { active, setSeat, advance, abort } = useFlightStore();
+  const recentlyUsed = useMemo(() =&gt; new Set(loadHistory().slice(0, 20).map(f =&gt; f.seat)), []);
+
+  return (
+    &lt;div className=&quot;max-w-xl mx-auto p-8 space-y-6&quot;&gt;
+      &lt;h2 className=&quot;text-2xl font-bold&quot;&gt;Choose your seat&lt;/h2&gt;
+      &lt;SeatMap
+        selected={active?.flight.seat ?? null}
+        recentlyUsed={recentlyUsed}
+        onSelect={setSeat}
+      /&gt;
+      &lt;div className=&quot;flex gap-3 justify-end&quot;&gt;
+        &lt;button onClick={abort} className=&quot;px-4 py-2 text-slate-500&quot;&gt;Cancel&lt;/button&gt;
+        &lt;button onClick={advance} disabled={!active?.flight.seat}
+          className=&quot;bg-orange-500 text-white px-6 py-2 rounded-lg disabled:opacity-40&quot;&gt;
+          Next: Boarding pass →
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 동작 확인 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm run dev   # 좌석 선택 후 다음 가능한지 확인
+git add -A
+git commit -m &quot;feat: SeatMap component + SeatSelection step&quot;
+</code></pre>
+<h3 id="task-24-boardingpass-step">Task 2.4: BoardingPass step</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/BoardingPassCard.tsx</code></p>
+</li>
+<li><p>Modify: <code>src/flight/steps/BoardingPass.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: BoardingPassCard 공통 컴포넌트</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/BoardingPassCard.tsx
+import type { Category } from &#39;../types&#39;;
+
+type Props = {
+  category: Category;
+  durationMinutes: number;
+  seat: string;
+};
+
+export default function BoardingPassCard({ category, durationMinutes, seat }: Props) {
+  return (
+    &lt;div className=&quot;grid grid-cols-[1fr_auto] bg-amber-50 text-slate-900 rounded-xl overflow-hidden shadow-xl max-w-md mx-auto font-mono&quot;&gt;
+      &lt;div className=&quot;p-6 border-r-2 border-dashed border-amber-200&quot;&gt;
+        &lt;div className=&quot;flex justify-between mb-4 text-xs&quot;&gt;
+          &lt;span className=&quot;font-bold tracking-widest&quot;&gt;FOCUSFLIGHT&lt;/span&gt;
+          &lt;span className=&quot;text-slate-500&quot;&gt;FOCUS CLASS&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div className=&quot;flex items-center justify-between mb-5&quot;&gt;
+          &lt;div className=&quot;text-center&quot;&gt;&lt;div className=&quot;text-2xl font-extrabold&quot;&gt;NOW&lt;/div&gt;&lt;div className=&quot;text-[10px] text-slate-500&quot;&gt;현재&lt;/div&gt;&lt;/div&gt;
+          &lt;div className=&quot;text-orange-500 text-xl -rotate-12&quot;&gt;✈&lt;/div&gt;
+          &lt;div className=&quot;text-center&quot;&gt;&lt;div className=&quot;text-2xl font-extrabold&quot;&gt;DONE&lt;/div&gt;&lt;div className=&quot;text-[10px] text-slate-500&quot;&gt;완료&lt;/div&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div className=&quot;grid grid-cols-3 gap-3 text-xs&quot;&gt;
+          &lt;div&gt;&lt;div className=&quot;text-slate-500 text-[9px] tracking-widest&quot;&gt;CATEGORY&lt;/div&gt;&lt;div className=&quot;font-bold&quot; style={{ color: category.color }}&gt;{category.label}&lt;/div&gt;&lt;/div&gt;
+          &lt;div&gt;&lt;div className=&quot;text-slate-500 text-[9px] tracking-widest&quot;&gt;DURATION&lt;/div&gt;&lt;div className=&quot;font-bold&quot;&gt;{durationMinutes} MIN&lt;/div&gt;&lt;/div&gt;
+          &lt;div&gt;&lt;div className=&quot;text-slate-500 text-[9px] tracking-widest&quot;&gt;GATE&lt;/div&gt;&lt;div className=&quot;font-bold&quot;&gt;F1&lt;/div&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;bg-orange-400 p-6 flex flex-col items-center justify-between min-w-[120px]&quot;&gt;
+        &lt;div className=&quot;text-[9px] tracking-widest&quot;&gt;SEAT&lt;/div&gt;
+        &lt;div className=&quot;text-4xl font-extrabold&quot;&gt;{seat}&lt;/div&gt;
+        &lt;div className=&quot;text-[9px] tracking-widest opacity-70&quot;&gt;TICKET&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: BoardingPass step</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/BoardingPass.tsx
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import { useSettingsStore } from &#39;../../store/settingsStore&#39;;
+import BoardingPassCard from &#39;../../components/BoardingPassCard&#39;;
+
+export default function BoardingPass() {
+  const { active, advance, abort } = useFlightStore();
+  const { settings } = useSettingsStore();
+  if (!active) return null;
+  const cat = settings.categories.find(c =&gt; c.id === active.flight.category);
+  if (!cat || !active.flight.seat || !active.flight.plannedSeconds) return null;
+
+  return (
+    &lt;div className=&quot;max-w-xl mx-auto p-8 space-y-6&quot;&gt;
+      &lt;h2 className=&quot;text-2xl font-bold text-center&quot;&gt;Your boarding pass&lt;/h2&gt;
+      &lt;BoardingPassCard
+        category={cat}
+        durationMinutes={active.flight.plannedSeconds / 60}
+        seat={active.flight.seat}
+      /&gt;
+      &lt;div className=&quot;flex gap-3 justify-center&quot;&gt;
+        &lt;button onClick={abort} className=&quot;px-4 py-2 text-slate-500&quot;&gt;Cancel&lt;/button&gt;
+        &lt;button onClick={advance} className=&quot;bg-orange-500 text-white px-6 py-2 rounded-lg&quot;&gt;
+          Proceed to check-in →
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 동작 확인 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: BoardingPassCard component + BoardingPass step&quot;
+</code></pre>
+<h3 id="task-25-checkin-stub-drag-to-tear">Task 2.5: CheckIn — stub drag-to-tear</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/CheckIn.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Framer Motion drag 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/CheckIn.tsx
+import { motion, useMotionValue, useTransform } from &#39;framer-motion&#39;;
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import { useSettingsStore } from &#39;../../store/settingsStore&#39;;
+import BoardingPassCard from &#39;../../components/BoardingPassCard&#39;;
+import { useState } from &#39;react&#39;;
+
+const TEAR_THRESHOLD = 180;
+
+export default function CheckIn() {
+  const { active, startFlight, abort } = useFlightStore();
+  const { settings } = useSettingsStore();
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [0, TEAR_THRESHOLD], [1, 0.2]);
+  const [torn, setTorn] = useState(false);
+
+  if (!active) return null;
+  const cat = settings.categories.find(c =&gt; c.id === active.flight.category);
+  if (!cat || !active.flight.seat || !active.flight.plannedSeconds) return null;
+
+  function handleDragEnd() {
+    if (x.get() &gt;= TEAR_THRESHOLD &amp;&amp; !torn) {
+      setTorn(true);
+      setTimeout(() =&gt; startFlight(), 350);
+    } else {
+      x.set(0);
+    }
+  }
+
+  return (
+    &lt;div className=&quot;max-w-xl mx-auto p-8 space-y-6&quot;&gt;
+      &lt;h2 className=&quot;text-2xl font-bold text-center&quot;&gt;Tear stub to board&lt;/h2&gt;
+      &lt;div className=&quot;relative&quot;&gt;
+        &lt;BoardingPassCard category={cat} durationMinutes={active.flight.plannedSeconds / 60} seat={active.flight.seat} /&gt;
+        &lt;motion.div
+          drag=&quot;x&quot;
+          dragConstraints={{ left: 0, right: TEAR_THRESHOLD + 20 }}
+          dragElastic={0.1}
+          style={{ x, opacity }}
+          onDragEnd={handleDragEnd}
+          className=&quot;absolute top-0 right-0 bottom-0 w-[120px] bg-orange-400 rounded-r-xl cursor-grab active:cursor-grabbing&quot;&gt;
+          &lt;div className=&quot;flex flex-col h-full items-center justify-center text-white font-mono text-[10px] tracking-widest&quot;&gt;
+            ≫ TEAR ≫
+          &lt;/div&gt;
+        &lt;/motion.div&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;flex gap-3 justify-center&quot;&gt;
+        &lt;button onClick={abort} className=&quot;px-4 py-2 text-slate-500&quot;&gt;Cancel&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 키보드 fallback 추가</strong></li>
+</ul>
+<p><code>Space</code> 길게누르기:</p>
+<pre><code class="language-tsx">import { useEffect } from &#39;react&#39;;
+
+useEffect(() =&gt; {
+  let timer: number | null = null;
+  function onDown(e: KeyboardEvent) {
+    if (e.code === &#39;Space&#39; &amp;&amp; !timer) {
+      timer = window.setTimeout(() =&gt; { setTorn(true); setTimeout(() =&gt; startFlight(), 350); }, 500);
+    }
+  }
+  function onUp(e: KeyboardEvent) { if (e.code === &#39;Space&#39; &amp;&amp; timer) { clearTimeout(timer); timer = null; } }
+  window.addEventListener(&#39;keydown&#39;, onDown);
+  window.addEventListener(&#39;keyup&#39;, onUp);
+  return () =&gt; { window.removeEventListener(&#39;keydown&#39;, onDown); window.removeEventListener(&#39;keyup&#39;, onUp); if (timer) clearTimeout(timer); };
+}, []);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 수동 확인 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: CheckIn step with drag-to-tear + space fallback&quot;
+</code></pre>
+<h3 id="task-26-inflight-카운트다운-만료">Task 2.6: InFlight — 카운트다운 + 만료</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/Countdown.tsx</code></p>
+</li>
+<li><p>Modify: <code>src/flight/steps/InFlight.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Countdown 컴포넌트 (Date.now 기반)</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/Countdown.tsx
+import { useEffect, useState } from &#39;react&#39;;
+import { remainingSeconds, formatMMSS } from &#39;../lib/timer&#39;;
+
+type Props = { startedAt: number; plannedSeconds: number; onExpire: () =&gt; void };
+
+export default function Countdown({ startedAt, plannedSeconds, onExpire }: Props) {
+  const [tick, setTick] = useState(0);
+
+  useEffect(() =&gt; {
+    const id = window.setInterval(() =&gt; setTick(t =&gt; t + 1), 1000);
+    const onVis = () =&gt; setTick(t =&gt; t + 1);
+    document.addEventListener(&#39;visibilitychange&#39;, onVis);
+    return () =&gt; { clearInterval(id); document.removeEventListener(&#39;visibilitychange&#39;, onVis); };
+  }, []);
+
+  const rem = remainingSeconds(startedAt, plannedSeconds);
+  useEffect(() =&gt; { if (rem === 0) onExpire(); }, [rem, onExpire]);
+
+  return (
+    &lt;div className=&quot;text-8xl font-mono font-bold text-amber-50 tracking-widest&quot;&gt;
+      {formatMMSS(rem)}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: InFlight step</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/InFlight.tsx
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import { useSettingsStore } from &#39;../../store/settingsStore&#39;;
+import Countdown from &#39;../../components/Countdown&#39;;
+
+export default function InFlight() {
+  const { active, land, abort } = useFlightStore();
+  const { settings } = useSettingsStore();
+  if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
+  const cat = settings.categories.find(c =&gt; c.id === active.flight.category);
+
+  return (
+    &lt;div className=&quot;min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-orange-400 flex flex-col items-center justify-center gap-6&quot;&gt;
+      &lt;Countdown startedAt={active.flight.startedAt} plannedSeconds={active.flight.plannedSeconds} onExpire={land} /&gt;
+      &lt;div className=&quot;text-amber-50 text-sm tracking-widest font-mono opacity-70&quot;&gt;
+        {cat?.label} · {active.flight.seat} · {(active.flight.plannedSeconds / 60)} MIN
+      &lt;/div&gt;
+      &lt;button onClick={() =&gt; { if (confirm(&#39;Abort flight?&#39;)) abort(); }} className=&quot;absolute top-4 right-4 text-amber-50/40 text-xs&quot;&gt;
+        Abort
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 동작 확인 + 커밋</strong></li>
+</ul>
+<p><code>Booking → Seat → Boarding → CheckIn(tear) → InFlight</code> 까지 흐르는지 확인. 짧은 시간(1분)으로 테스트 후 만료가 land() 호출하는지 확인.</p>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: Countdown component + InFlight step with auto-expire&quot;
+</code></pre>
+<h3 id="task-27-landed-step">Task 2.7: Landed step</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>src/flight/FlightMachine.tsx</code>, <code>src/flight/steps/Landed.tsx</code></li>
+</ul>
+<p><strong>접근</strong>: <code>land()</code>는 Task 1.6에서 이미 <code>lastCompleted</code>를 세팅하도록 구현됨. <code>FlightMachine</code>은 <code>active === null &amp;&amp; lastCompleted</code> 상태일 때 Landed 화면을 보여준다. 사용자가 dismiss 또는 startBooking 시 lastCompleted를 비움.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 1: FlightMachine 분기 추가</strong></li>
+</ul>
+<pre><code class="language-tsx">// FlightMachine.tsx의 if (!active) { ... } 직전에:
+const { active, lastCompleted, hydrate, startBooking } = useFlightStore();
+
+if (!active &amp;&amp; lastCompleted) {
+  return &lt;Landed flight={lastCompleted} /&gt;;
+}
+</code></pre>
+<p>기존 idle 분기(<code>!active</code>)는 그대로 유지 (lastCompleted가 null일 때).</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Landed UI</strong></li>
+</ul>
+<pre><code class="language-tsx">// src/flight/steps/Landed.tsx
+import { useFlightStore } from &#39;../../store/flightStore&#39;;
+import type { Flight } from &#39;../../types&#39;;
+import { formatMMSS } from &#39;../../lib/timer&#39;;
+
+export default function Landed({ flight }: { flight: Flight }) {
+  const { startBooking, dismissLanded } = useFlightStore();
+  return (
+    &lt;div className=&quot;min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-900 text-amber-50&quot;&gt;
+      &lt;div className=&quot;text-6xl&quot;&gt;🛬&lt;/div&gt;
+      &lt;h2 className=&quot;text-3xl font-bold&quot;&gt;Landed&lt;/h2&gt;
+      &lt;div className=&quot;font-mono text-center space-y-1 text-sm&quot;&gt;
+        &lt;div&gt;{formatMMSS(flight.actualSeconds)} focused&lt;/div&gt;
+        &lt;div className=&quot;opacity-60&quot;&gt;Seat {flight.seat}&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;flex gap-3&quot;&gt;
+        &lt;button onClick={() =&gt; { dismissLanded(); startBooking(); }} className=&quot;bg-orange-500 px-6 py-3 rounded-lg&quot;&gt;Book another&lt;/button&gt;
+        &lt;button onClick={dismissLanded} className=&quot;px-6 py-3 border border-amber-50/30 rounded-lg&quot;&gt;
+          Home
+        &lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: Landed screen with last-completed display&quot;
+</code></pre>
+<h3 id="task-28-m2-통합-테스트-full-flow">Task 2.8: M2 통합 테스트 (full flow)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>tests/flight-full-flow.test.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 테스트 작성</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// tests/flight-full-flow.test.tsx
+import { describe, it, expect, beforeEach, vi } from &#39;vitest&#39;;
+import { render, screen, fireEvent } from &#39;@testing-library/react&#39;;
+import userEvent from &#39;@testing-library/user-event&#39;;
+import App from &#39;../src/App&#39;;
+import { useFlightStore } from &#39;../src/store/flightStore&#39;;
+import { loadHistory } from &#39;../src/lib/storage&#39;;
+
+describe(&#39;Flight full flow (1-min flight)&#39;, () =&gt; {
+  beforeEach(() =&gt; {
+    localStorage.clear();
+    useFlightStore.setState({ active: null, lastCompleted: null });
+    vi.useFakeTimers();
+  });
+
+  it(&#39;booking → landed appends to history&#39;, async () =&gt; {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(&lt;App /&gt;);
+
+    await user.click(screen.getByText(&#39;Book a flight&#39;));
+    await user.click(screen.getByText(&#39;25 min&#39;));
+    await user.click(screen.getByText(&#39;일&#39;));
+    await user.click(screen.getByText(/Next: Choose seat/));
+
+    await user.click(screen.getByText(&#39;1A&#39;));
+    await user.click(screen.getByText(/Next: Boarding pass/));
+
+    await user.click(screen.getByText(/Proceed to check-in/));
+
+    // bypass drag — directly call startFlight
+    useFlightStore.getState().startFlight();
+
+    // expire
+    vi.advanceTimersByTime(25 * 60 * 1000 + 1000);
+    // Countdown&#39;s onExpire effect triggers land()
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(loadHistory().length).toBe(1);
+    expect(loadHistory()[0].category).toBe(&#39;work&#39;);
+    expect(loadHistory()[0].seat).toBe(&#39;1A&#39;);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 실행 + 통과 + test-reviewer + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- flight-full-flow
+git add -A
+git commit -m &quot;test: full flight flow integration (booking → landed)&quot;
+</code></pre>
+<h3 id="task-29-m2-마일스톤-종료">Task 2.9: M2 마일스톤 종료</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 1: 전체 테스트 통과</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- --run
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 빌드 통과 + 수동 확인</strong></li>
+</ul>
+<pre><code class="language-bash">npm run build
+npm run dev   # 실제 25분 흐름 한 번 끝까지 (또는 짧은 시간으로 단축)
+</code></pre>
+<hr>
+<h2 id="chunk-3-m3-persistence-resume">Chunk 3: M3 — Persistence &amp; Resume</h2>
+<p><strong>목표</strong>: 새로고침/탭 닫기 후 재진입 시 진행 중 비행 복구. ResumeModal로 사용자에게 Resume/Abort 선택 제공. 백그라운드 만료 자동 처리.</p>
+<h3 id="task-31-resumemodal-컴포넌트">Task 3.1: ResumeModal 컴포넌트</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/flight/ResumeModal.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/flight/ResumeModal.tsx
+type Props = { onResume: () =&gt; void; onAbort: () =&gt; void };
+
+export default function ResumeModal({ onResume, onAbort }: Props) {
+  return (
+    &lt;div className=&quot;fixed inset-0 bg-black/60 flex items-center justify-center z-50&quot;&gt;
+      &lt;div className=&quot;bg-white rounded-xl p-8 max-w-sm w-full space-y-4&quot;&gt;
+        &lt;h3 className=&quot;text-xl font-bold&quot;&gt;Resume your flight?&lt;/h3&gt;
+        &lt;p className=&quot;text-slate-600 text-sm&quot;&gt;A flight was in progress when you left. Continue or discard?&lt;/p&gt;
+        &lt;div className=&quot;flex gap-3 justify-end&quot;&gt;
+          &lt;button onClick={onAbort} className=&quot;px-4 py-2 text-slate-500&quot;&gt;Discard&lt;/button&gt;
+          &lt;button onClick={onResume} className=&quot;bg-orange-500 text-white px-6 py-2 rounded-lg&quot;&gt;Resume&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: FlightMachine에서 hydrate 시 모달 표시 로직</strong></li>
+</ul>
+<pre><code class="language-tsx">// FlightMachine.tsx에 추가
+const [showResume, setShowResume] = useState(false);
+useEffect(() =&gt; {
+  hydrate();
+  const a = loadActive();
+  if (a) setShowResume(true);
+}, [hydrate]);
+
+if (showResume) {
+  return &lt;ResumeModal
+    onResume={() =&gt; setShowResume(false)}
+    onAbort={() =&gt; { abort(); setShowResume(false); }}
+  /&gt;;
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 통합 테스트</strong></li>
+</ul>
+<pre><code class="language-tsx">// tests/resume-flow.test.tsx
+import { describe, it, expect, beforeEach } from &#39;vitest&#39;;
+import { render, screen } from &#39;@testing-library/react&#39;;
+import userEvent from &#39;@testing-library/user-event&#39;;
+import App from &#39;../src/App&#39;;
+import { saveActive } from &#39;../src/lib/storage&#39;;
+
+describe(&#39;Resume flow&#39;, () =&gt; {
+  beforeEach(() =&gt; localStorage.clear());
+
+  it(&#39;shows resume modal when active exists on mount&#39;, async () =&gt; {
+    saveActive({ step: &#39;inflight&#39;, flight: { id: &#39;x&#39;, startedAt: Date.now(), plannedSeconds: 1500, category: &#39;work&#39;, seat: &#39;1A&#39; } });
+    render(&lt;App /&gt;);
+    expect(await screen.findByText(/Resume your flight/)).toBeInTheDocument();
+  });
+
+  it(&#39;Discard clears active and shows home&#39;, async () =&gt; {
+    saveActive({ step: &#39;inflight&#39;, flight: { id: &#39;x&#39; } });
+    const user = userEvent.setup();
+    render(&lt;App /&gt;);
+    await user.click(screen.getByText(&#39;Discard&#39;));
+    expect(screen.getByText(&#39;Book a flight&#39;)).toBeInTheDocument();
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- resume-flow
+git add -A
+git commit -m &quot;feat: ResumeModal for active flight recovery&quot;
+</code></pre>
+<h3 id="task-32-resume-시-만료-즉시-처리-beforeunload-경고">Task 3.2: Resume 시 만료 즉시 처리 + beforeunload 경고</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/FlightMachine.tsx</code>, <code>src/flight/steps/InFlight.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: Resume 직후 isExpired면 즉시 land() 호출</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// FlightMachine.tsx
+import { isExpired } from &#39;../lib/timer&#39;;
+
+function onResume() {
+  setShowResume(false);
+  const a = useFlightStore.getState().active;
+  if (a?.step === &#39;inflight&#39; &amp;&amp; a.flight.startedAt &amp;&amp; a.flight.plannedSeconds
+      &amp;&amp; isExpired(a.flight.startedAt, a.flight.plannedSeconds)) {
+    useFlightStore.getState().land();
+  }
+}
+// ResumeModal의 onResume prop으로 전달
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: beforeunload 경고 (In-flight 중)</strong></li>
+</ul>
+<pre><code class="language-tsx">// InFlight.tsx에 useEffect 추가
+useEffect(() =&gt; {
+  const handler = (e: BeforeUnloadEvent) =&gt; { e.preventDefault(); e.returnValue = &#39;&#39;; };
+  window.addEventListener(&#39;beforeunload&#39;, handler);
+  return () =&gt; window.removeEventListener(&#39;beforeunload&#39;, handler);
+}, []);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 통합 테스트 — 만료된 상태로 마운트 시 즉시 land</strong></li>
+</ul>
+<pre><code class="language-tsx">// tests/resume-flow.test.tsx에 추가
+it(&#39;lands immediately when resume on already-expired flight&#39;, async () =&gt; {
+  const past = Date.now() - 30 * 60 * 1000;  // 30분 전
+  saveActive({ step: &#39;inflight&#39;, flight: { id: &#39;x&#39;, startedAt: past, plannedSeconds: 60, category: &#39;work&#39;, seat: &#39;1A&#39; } });
+  const user = userEvent.setup();
+  render(&lt;App /&gt;);
+  await user.click(await screen.findByText(/Resume/));
+  // lastCompleted 화면 표시 또는 history에 적재 확인
+  expect(loadHistory().length).toBe(1);
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- resume-flow
+git add -A
+git commit -m &quot;feat: detect expired flight on resume + beforeunload guard&quot;
+</code></pre>
+<h3 id="task-33-wakelock-in-flight-중-화면-sleep-방지">Task 3.3: WakeLock — In-flight 중 화면 sleep 방지</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/wakelock.ts</code></p>
+</li>
+<li><p>Modify: <code>src/flight/steps/InFlight.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: WakeLock wrapper</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/lib/wakelock.ts
+let sentinel: WakeLockSentinel | null = null;
+
+export async function requestWakeLock(): Promise&lt;void&gt; {
+  if (!(&#39;wakeLock&#39; in navigator)) return;
+  try {
+    sentinel = await navigator.wakeLock.request(&#39;screen&#39;);
+  } catch {
+    // 권한 거부 or 미지원 — silent
+  }
+}
+
+export async function releaseWakeLock(): Promise&lt;void&gt; {
+  if (sentinel) {
+    try { await sentinel.release(); } catch {}
+    sentinel = null;
+  }
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: InFlight에서 마운트/언마운트 시 호출</strong></li>
+</ul>
+<pre><code class="language-tsx">import { requestWakeLock, releaseWakeLock } from &#39;../../lib/wakelock&#39;;
+
+useEffect(() =&gt; {
+  requestWakeLock();
+  const onVis = () =&gt; { if (document.visibilityState === &#39;visible&#39;) requestWakeLock(); };
+  document.addEventListener(&#39;visibilitychange&#39;, onVis);
+  return () =&gt; {
+    releaseWakeLock();
+    document.removeEventListener(&#39;visibilitychange&#39;, onVis);
+  };
+}, []);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A
+git commit -m &quot;feat: wake lock during in-flight&quot;
+</code></pre>
+<hr>
+<h2 id="chunk-4-m4-stats-dashboard">Chunk 4: M4 — Stats Dashboard</h2>
+<p><strong>목표</strong>: <code>/stats</code> 라우트에 KPI 카드 3개 + 주간 막대 + 카테고리 도넛 + 최근 비행 테이블.</p>
+<h3 id="task-41-kpicard-컴포넌트">Task 4.1: KpiCard 컴포넌트</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/KpiCard.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/KpiCard.tsx
+export default function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    &lt;div className=&quot;bg-white rounded-xl p-6 border border-slate-200 shadow-sm&quot;&gt;
+      &lt;div className=&quot;text-xs uppercase tracking-widest text-slate-500&quot;&gt;{label}&lt;/div&gt;
+      &lt;div className=&quot;text-3xl font-bold mt-2&quot;&gt;{value}&lt;/div&gt;
+      {hint &amp;&amp; &lt;div className=&quot;text-xs text-slate-400 mt-1&quot;&gt;{hint}&lt;/div&gt;}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: KpiCard component&quot;
+</code></pre>
+<h3 id="task-42-weeklybar-차트-recharts">Task 4.2: WeeklyBar 차트 (Recharts)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/charts/WeeklyBar.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현 작성</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/charts/WeeklyBar.tsx
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from &#39;recharts&#39;;
+import type { WeeklyByDay } from &#39;../../lib/stats&#39;;
+import type { Category } from &#39;../../types&#39;;
+
+type Props = { data: WeeklyByDay[]; categories: Category[] };
+
+export default function WeeklyBar({ data, categories }: Props) {
+  const flat = data.map(d =&gt; ({
+    name: d.dayLabel,
+    ...Object.fromEntries(Object.entries(d.categories).map(([k, v]) =&gt; [k, Math.round(v / 60)])),
+  }));
+  return (
+    &lt;ResponsiveContainer width=&quot;100%&quot; height={240}&gt;
+      &lt;BarChart data={flat}&gt;
+        &lt;XAxis dataKey=&quot;name&quot; tick={{ fontSize: 12 }} /&gt;
+        &lt;YAxis tick={{ fontSize: 12 }} unit=&quot;m&quot; /&gt;
+        &lt;Tooltip /&gt;
+        {categories.map(c =&gt; (
+          &lt;Bar key={c.id} dataKey={c.id} stackId=&quot;a&quot; fill={c.color} /&gt;
+        ))}
+      &lt;/BarChart&gt;
+    &lt;/ResponsiveContainer&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 빌드 확인 (recharts 트리쉐이킹)</strong></li>
+</ul>
+<pre><code class="language-bash">npm run build
+</code></pre>
+<p>dist 크기가 너무 크면 (&gt;500KB chunk) Recharts를 dynamic import로 분리 검토.</p>
+<h3 id="task-43-categorydonut">Task 4.3: CategoryDonut</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/components/charts/CategoryDonut.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/components/charts/CategoryDonut.tsx
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from &#39;recharts&#39;;
+import type { Category } from &#39;../../types&#39;;
+
+type Props = { breakdown: Record&lt;string, number&gt;; categories: Category[] };
+
+export default function CategoryDonut({ breakdown, categories }: Props) {
+  const data = categories
+    .map(c =&gt; ({ name: c.label, value: Math.round((breakdown[c.id] || 0) / 60), color: c.color }))
+    .filter(d =&gt; d.value &gt; 0);
+  return (
+    &lt;ResponsiveContainer width=&quot;100%&quot; height={240}&gt;
+      &lt;PieChart&gt;
+        &lt;Pie data={data} dataKey=&quot;value&quot; innerRadius={50} outerRadius={90}&gt;
+          {data.map((d, i) =&gt; &lt;Cell key={i} fill={d.color} /&gt;)}
+        &lt;/Pie&gt;
+        &lt;Tooltip /&gt;
+      &lt;/PieChart&gt;
+    &lt;/ResponsiveContainer&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Commit charts</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: WeeklyBar + CategoryDonut charts&quot;
+</code></pre>
+<h3 id="task-44-stats-페이지-통합-기간-토글-포함">Task 4.4: Stats 페이지 통합 (기간 토글 포함)</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/routes/Stats.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// src/routes/Stats.tsx
+import { useMemo, useState } from &#39;react&#39;;
+import { loadHistory } from &#39;../lib/storage&#39;;
+import { weeklyFocusSeconds, streakDays, averageFlightSeconds, weeklyByDay, categoryBreakdown } from &#39;../lib/stats&#39;;
+import { useSettingsStore } from &#39;../store/settingsStore&#39;;
+import { formatMMSS } from &#39;../lib/timer&#39;;
+import KpiCard from &#39;../components/KpiCard&#39;;
+import WeeklyBar from &#39;../components/charts/WeeklyBar&#39;;
+import CategoryDonut from &#39;../components/charts/CategoryDonut&#39;;
+
+type Period = &#39;week&#39; | &#39;month&#39; | &#39;all&#39;;
+
+function sinceFor(p: Period): number {
+  if (p === &#39;all&#39;) return 0;
+  const now = Date.now();
+  return p === &#39;week&#39; ? now - 7 * 86400000 : now - 30 * 86400000;
+}
+
+export default function Stats() {
+  const { settings } = useSettingsStore();
+  const [period, setPeriod] = useState&lt;Period&gt;(&#39;week&#39;);
+  const history = useMemo(() =&gt; loadHistory(), []);
+  const weekSec = useMemo(() =&gt; weeklyFocusSeconds(history), [history]);
+  const streak = useMemo(() =&gt; streakDays(history), [history]);
+  const avgSec = useMemo(() =&gt; averageFlightSeconds(history), [history]);
+  const weekly = useMemo(() =&gt; weeklyByDay(history), [history]);
+  const breakdown = useMemo(() =&gt; categoryBreakdown(history, sinceFor(period)), [history, period]);
+
+  if (history.length === 0) {
+    return (
+      &lt;div className=&quot;p-8 text-center text-slate-500&quot;&gt;
+        &lt;p&gt;아직 비행 기록이 없습니다 — 첫 비행을 예약해보세요.&lt;/p&gt;
+      &lt;/div&gt;
+    );
+  }
+
+  return (
+    &lt;div className=&quot;max-w-4xl mx-auto p-8 space-y-8&quot;&gt;
+      &lt;div className=&quot;flex items-center justify-between&quot;&gt;
+        &lt;h1 className=&quot;text-2xl font-bold&quot;&gt;Stats&lt;/h1&gt;
+        &lt;div className=&quot;flex gap-1 text-xs&quot;&gt;
+          {([&#39;week&#39;, &#39;month&#39;, &#39;all&#39;] as Period[]).map(p =&gt; (
+            &lt;button key={p} onClick={() =&gt; setPeriod(p)}
+              className={`px-3 py-1 rounded ${period === p ? &#39;bg-slate-900 text-white&#39; : &#39;bg-slate-100&#39;}`}&gt;
+              {p === &#39;week&#39; ? &#39;주&#39; : p === &#39;month&#39; ? &#39;월&#39; : &#39;전체&#39;}
+            &lt;/button&gt;
+          ))}
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;grid grid-cols-1 md:grid-cols-3 gap-4&quot;&gt;
+        &lt;KpiCard label=&quot;This week&quot; value={`${Math.round(weekSec / 60)}m`} /&gt;
+        &lt;KpiCard label=&quot;Streak&quot; value={`${streak} days`} /&gt;
+        &lt;KpiCard label=&quot;Average flight&quot; value={formatMMSS(avgSec)} hint=&quot;최근 1000개 비행 기준&quot; /&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;grid grid-cols-1 md:grid-cols-2 gap-6&quot;&gt;
+        &lt;div className=&quot;bg-white rounded-xl p-4 border border-slate-200&quot;&gt;
+          &lt;h3 className=&quot;text-sm font-bold mb-2&quot;&gt;Last 7 days&lt;/h3&gt;
+          &lt;WeeklyBar data={weekly} categories={settings.categories} /&gt;
+        &lt;/div&gt;
+        &lt;div className=&quot;bg-white rounded-xl p-4 border border-slate-200&quot;&gt;
+          &lt;h3 className=&quot;text-sm font-bold mb-2&quot;&gt;Categories ({period})&lt;/h3&gt;
+          &lt;CategoryDonut breakdown={breakdown} categories={settings.categories} /&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div className=&quot;bg-white rounded-xl border border-slate-200 overflow-hidden&quot;&gt;
+        &lt;table className=&quot;w-full text-sm&quot;&gt;
+          &lt;thead className=&quot;bg-slate-50 text-slate-500 text-xs uppercase tracking-widest&quot;&gt;
+            &lt;tr&gt;&lt;th className=&quot;p-3 text-left&quot;&gt;Date&lt;/th&gt;&lt;th&gt;Category&lt;/th&gt;&lt;th&gt;Duration&lt;/th&gt;&lt;th&gt;Seat&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;/tr&gt;
+          &lt;/thead&gt;
+          &lt;tbody&gt;
+            {history.slice(0, 20).map(f =&gt; (
+              &lt;tr key={f.id} className=&quot;border-t border-slate-100&quot;&gt;
+                &lt;td className=&quot;p-3&quot;&gt;{new Date(f.startedAt).toLocaleString()}&lt;/td&gt;
+                &lt;td&gt;{settings.categories.find(c =&gt; c.id === f.category)?.label ?? f.category}&lt;/td&gt;
+                &lt;td&gt;{formatMMSS(f.actualSeconds)} / {formatMMSS(f.plannedSeconds)}&lt;/td&gt;
+                &lt;td className=&quot;font-mono&quot;&gt;{f.seat}&lt;/td&gt;
+                &lt;td className={f.status === &#39;completed&#39; ? &#39;text-emerald-600&#39; : &#39;text-slate-400&#39;}&gt;{f.status}&lt;/td&gt;
+              &lt;/tr&gt;
+            ))}
+          &lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: Empty + data 테스트</strong></li>
+</ul>
+<pre><code class="language-tsx">// tests/stats-empty.test.tsx
+import { describe, it, expect, beforeEach } from &#39;vitest&#39;;
+import { render, screen } from &#39;@testing-library/react&#39;;
+import { MemoryRouter } from &#39;react-router-dom&#39;;
+import Stats from &#39;../src/routes/Stats&#39;;
+
+describe(&#39;Stats empty&#39;, () =&gt; {
+  beforeEach(() =&gt; localStorage.clear());
+  it(&#39;shows empty state&#39;, () =&gt; {
+    render(&lt;MemoryRouter&gt;&lt;Stats /&gt;&lt;/MemoryRouter&gt;);
+    expect(screen.getByText(/아직 비행 기록이 없습니다/)).toBeInTheDocument();
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- stats
+git add -A
+git commit -m &quot;feat: Stats dashboard with KPIs, charts, recent table&quot;
+</code></pre>
+<hr>
+<h2 id="chunk-5-m5-polish-visual-animations">Chunk 5: M5 — Polish (Visual + Animations)</h2>
+<p><strong>목표</strong>: 컬러/타이포 시스템 적용, 단계 전환 Framer Motion 슬라이드, 보딩패스 등장 spring, 구름 SVG, prefers-reduced-motion 대응.</p>
+<h3 id="task-51-컬러-토큰-tailwind-확장">Task 5.1: 컬러 토큰 + Tailwind 확장</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>tailwind.config.js</code>, <code>src/styles/globals.css</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: tailwind.config.js theme extend</strong></p>
+</li>
+</ul>
+<pre><code class="language-js">// tailwind.config.js
+export default {
+  content: [&#39;./index.html&#39;, &#39;./src/**/*.{ts,tsx}&#39;],
+  theme: {
+    extend: {
+      colors: {
+        night: &#39;#0A1628&#39;,
+        deepblue: &#39;#264653&#39;,
+        sunset: &#39;#F4A261&#39;,
+        paper: &#39;#F5F1E8&#39;,
+        complete: &#39;#2A9D8F&#39;,
+      },
+      fontFamily: {
+        ticket: [&#39;&quot;JetBrains Mono&quot;&#39;, &#39;monospace&#39;],
+      },
+    },
+  },
+};
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: globals.css에 Inter/JetBrains Mono 로드 + reduced-motion</strong></li>
+</ul>
+<pre><code class="language-css">@import url(&#39;https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;700;800&amp;display=swap&#39;);
+@tailwind base; @tailwind components; @tailwind utilities;
+body { font-family: &#39;Inter&#39;, sans-serif; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</code></pre>
+<p>기존 컴포넌트의 컬러 클래스(<code>bg-orange-500</code> → <code>bg-sunset</code> 등)도 새 토큰으로 교체.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;style: color tokens + fonts + reduced-motion guard&quot;
+</code></pre>
+<h3 id="task-52-단계-전환-애니메이션">Task 5.2: 단계 전환 애니메이션</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/FlightMachine.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: AnimatePresence 래핑</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">import { AnimatePresence, motion } from &#39;framer-motion&#39;;
+
+// switch 부분을 다음으로 교체
+return (
+  &lt;AnimatePresence mode=&quot;wait&quot;&gt;
+    &lt;motion.div key={active.step}
+      initial={{ x: 60, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -60, opacity: 0 }}
+      transition={{ duration: 0.2 }}&gt;
+      {/* switch case 그대로 */}
+    &lt;/motion.div&gt;
+  &lt;/AnimatePresence&gt;
+);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 보딩패스 spring 등장</strong></li>
+</ul>
+<p><code>src/flight/steps/BoardingPass.tsx</code>의 <code>BoardingPassCard</code> 래핑:</p>
+<pre><code class="language-tsx">&lt;motion.div initial={{ y: -100, opacity: 0, rotate: -3 }}
+  animate={{ y: 0, opacity: 1, rotate: 0 }}
+  transition={{ type: &#39;spring&#39;, stiffness: 100, damping: 12 }}&gt;
+  &lt;BoardingPassCard ... /&gt;
+&lt;/motion.div&gt;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: step transitions + boarding pass spring entry&quot;
+</code></pre>
+<h3 id="task-53-in-flight-구름-애니메이션-창문-프레임">Task 5.3: In-flight 구름 애니메이션 + 창문 프레임</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/InFlight.tsx</code></p>
+</li>
+<li><p>Create: <code>public/clouds/cloud-{1,2,3}.svg</code> (간단한 SVG)</p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: SVG 자산 생성 (또는 inline)</strong></p>
+</li>
+</ul>
+<p>inline으로 처리 (외부 파일 불필요):</p>
+<pre><code class="language-tsx">function Cloud({ delay, top, scale }: { delay: number; top: string; scale: number }) {
+  return (
+    &lt;motion.div className=&quot;absolute w-32 h-8 bg-paper/70 rounded-full blur-sm&quot;
+      style={{ top, scale }}
+      initial={{ x: &#39;-30vw&#39; }}
+      animate={{ x: &#39;130vw&#39; }}
+      transition={{ duration: 30, delay, repeat: Infinity, ease: &#39;linear&#39; }}
+    /&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: InFlight에 3개 cloud 레이어 + 창문 프레임</strong></li>
+</ul>
+<pre><code class="language-tsx">&lt;div className=&quot;min-h-screen bg-gradient-to-b from-night via-deepblue to-sunset relative overflow-hidden flex items-center justify-center&quot;&gt;
+  &lt;Cloud delay={0} top=&quot;30%&quot; scale={1} /&gt;
+  &lt;Cloud delay={8} top=&quot;50%&quot; scale={0.7} /&gt;
+  &lt;Cloud delay={15} top=&quot;70%&quot; scale={0.9} /&gt;
+  &lt;div className=&quot;relative z-10 ...&quot;&gt;
+    &lt;Countdown ... /&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: in-flight cloud parallax&quot;
+</code></pre>
+<h3 id="task-54-a11y-aria-label-reduced-motion-검증">Task 5.4: a11y aria-label + reduced-motion 검증</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/CheckIn.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: stub에 aria-label 추가</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">&lt;motion.div
+  role=&quot;button&quot;
+  tabIndex={0}
+  aria-label=&quot;Tear boarding pass to start your flight&quot;
+  ...
+&gt;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 수동 검증</strong></li>
+</ul>
+<p>macOS 시스템 설정 → 손쉬운 사용 → 모션 줄이기 활성화 후 reload. 단계 전환이 즉시 일어나고 구름이 정지하는지 확인 (globals.css의 reduced-motion 미디어 쿼리가 동작).</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;a11y: stub aria-label + verify reduced-motion guard&quot;
+</code></pre>
+<hr>
+<h2 id="chunk-6-m6-sound-system">Chunk 6: M6 — Sound System</h2>
+<p><strong>목표</strong>: <code>lib/audio.ts</code> 작성 + 4종 사운드 프리로드 + 의식 전환별 큐 발생 + in-flight mute 토글.</p>
+<h3 id="task-61-libaudiots-audiocontext-gainnode">Task 6.1: <code>lib/audio.ts</code> — AudioContext + GainNode</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/audio.ts</code>, <code>src/lib/audio.test.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 실패 테스트</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">// src/lib/audio.test.ts
+import { describe, it, expect, vi, beforeEach } from &#39;vitest&#39;;
+import { AudioBus } from &#39;./audio&#39;;
+
+describe(&#39;AudioBus&#39;, () =&gt; {
+  beforeEach(() =&gt; {
+    // jsdom AudioContext mock
+    (globalThis as any).AudioContext = class {
+      createGain() { return { gain: { value: 1, linearRampToValueAtTime: vi.fn() }, connect: vi.fn() }; }
+      destination = {};
+      currentTime = 0;
+      resume = vi.fn().mockResolvedValue(undefined);
+      state = &#39;running&#39;;
+    };
+  });
+
+  it(&#39;initializes with master gain&#39;, () =&gt; {
+    const bus = new AudioBus();
+    expect(bus.getVolume()).toBe(0.6);
+  });
+
+  it(&#39;setVolume clamps to [0,1]&#39;, () =&gt; {
+    const bus = new AudioBus();
+    bus.setVolume(1.5); expect(bus.getVolume()).toBe(1);
+    bus.setVolume(-0.2); expect(bus.getVolume()).toBe(0);
+  });
+});
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 구현</strong></li>
+</ul>
+<pre><code class="language-ts">// src/lib/audio.ts
+export type SoundId = &#39;takeoff&#39; | &#39;engine&#39; | &#39;landing&#39; | &#39;tear&#39;;
+
+const URLS: Record&lt;SoundId, string&gt; = {
+  takeoff: &#39;/sounds/takeoff.mp3&#39;,
+  engine: &#39;/sounds/engine.mp3&#39;,
+  landing: &#39;/sounds/landing.mp3&#39;,
+  tear: &#39;/sounds/tear.mp3&#39;,
+};
+
+export class AudioBus {
+  private ctx: AudioContext | null = null;
+  private master: GainNode | null = null;
+  private elements: Map&lt;SoundId, HTMLAudioElement&gt; = new Map();
+  private volume = 0.6;
+
+  init(): void {
+    if (this.ctx) return;
+    const Ctx = (window.AudioContext ?? (window as any).webkitAudioContext);
+    if (!Ctx) return;
+    this.ctx = new Ctx();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = this.volume;
+    this.master.connect(this.ctx.destination);
+
+    for (const id of Object.keys(URLS) as SoundId[]) {
+      const el = new Audio(URLS[id]);
+      el.preload = &#39;auto&#39;;
+      el.loop = id === &#39;engine&#39;;
+      const source = this.ctx.createMediaElementSource(el);
+      source.connect(this.master);
+      this.elements.set(id, el);
+    }
+  }
+
+  async resume(): Promise&lt;void&gt; {
+    if (this.ctx?.state === &#39;suspended&#39;) await this.ctx.resume();
+  }
+
+  setVolume(v: number): void {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = this.volume;
+  }
+
+  getVolume(): number { return this.volume; }
+
+  private fade(toValue: number, durationMs = 200): void {
+    if (!this.ctx || !this.master) return;
+    const now = this.ctx.currentTime;
+    const g = this.master.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(toValue, now + durationMs / 1000);
+  }
+
+  play(id: SoundId): void {
+    const el = this.elements.get(id);
+    if (!el) return;
+    el.currentTime = 0;
+    this.fade(this.volume, 200);   // ensure master at target after a previous fadeout
+    el.play().catch(() =&gt; {});
+  }
+
+  /** Stop with a short fade-out (useful for engine loop). */
+  stop(id: SoundId): void {
+    const el = this.elements.get(id);
+    if (!el) return;
+    if (id === &#39;engine&#39;) {
+      this.fade(0, 200);
+      window.setTimeout(() =&gt; {
+        el.pause();
+        el.currentTime = 0;
+        this.fade(this.volume, 200);   // restore master so next play() audible
+      }, 220);
+    } else {
+      el.pause();
+      el.currentTime = 0;
+    }
+  }
+}
+
+export const audioBus = new AudioBus();
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 통과 + 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- audio.test
+git add -A
+git commit -m &quot;feat: AudioBus with master gain and 4 preloaded cues&quot;
+</code></pre>
+<h3 id="task-62-사운드-파일-추가">Task 6.2: 사운드 파일 추가</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Add: <code>public/sounds/{takeoff,engine,landing,tear}.mp3</code></p>
+</li>
+<li><p>Create: <code>public/sounds/CREDITS.md</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: CC0/CC-BY 소스에서 4개 파일 다운로드</strong></p>
+</li>
+</ul>
+<p>추천 검색어 (freesound.org):</p>
+<ul>
+<li>takeoff: &quot;airplane takeoff&quot; CC0</li>
+<li>engine: &quot;airplane cabin ambient&quot; CC0 (loopable 권장)</li>
+<li>landing: &quot;airplane landing chime&quot; CC0</li>
+<li>tear: &quot;paper rip short&quot; CC0</li>
+</ul>
+<p><code>public/sounds/</code>에 배치. 파일명 정확히 <code>takeoff.mp3</code>, <code>engine.mp3</code>, <code>landing.mp3</code>, <code>tear.mp3</code>.</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: CREDITS.md 작성</strong></li>
+</ul>
+<pre><code class="language-md"># Sound Credits
+
+- takeoff.mp3 — [Title](URL) by Author, CC0
+- engine.mp3 — [Title](URL) by Author, CC0
+- landing.mp3 — [Title](URL) by Author, CC0
+- tear.mp3 — [Title](URL) by Author, CC0
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add public/sounds/
+git commit -m &quot;chore: add CC0 sound assets&quot;
+</code></pre>
+<h3 id="task-63-전환별-사운드-큐-연결">Task 6.3: 전환별 사운드 큐 연결</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/CheckIn.tsx</code>, <code>src/flight/steps/InFlight.tsx</code>, <code>src/flight/FlightMachine.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: CheckIn의 tear 트리거 시 사운드</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">import { audioBus } from &#39;../../lib/audio&#39;;
+// drag end + 임계 도달 시:
+await audioBus.resume();
+audioBus.play(&#39;tear&#39;);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: startFlight 직후 takeoff + engine</strong></li>
+</ul>
+<pre><code class="language-tsx">// CheckIn 또는 InFlight 마운트 직후
+setTimeout(() =&gt; {
+  audioBus.play(&#39;takeoff&#39;);
+  setTimeout(() =&gt; audioBus.play(&#39;engine&#39;), 1500);
+}, 200);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 3: land 시 engine stop + landing</strong></li>
+</ul>
+<pre><code class="language-tsx">// onExpire 콜백에 추가
+audioBus.stop(&#39;engine&#39;);
+audioBus.play(&#39;landing&#39;);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 4: settings.soundEnabled 반영</strong></li>
+</ul>
+<p><code>audioBus.setVolume(settings.soundEnabled ? settings.volume : 0)</code> 형태로 settings 변경 구독.</p>
+<pre><code class="language-tsx">// src/main.tsx 또는 App.tsx
+useEffect(() =&gt; {
+  audioBus.init();
+  return useSettingsStore.subscribe((s) =&gt; {
+    audioBus.setVolume(s.settings.soundEnabled ? s.settings.volume : 0);
+  });
+}, []);
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 5: in-flight mute 토글</strong></li>
+</ul>
+<pre><code class="language-tsx">// InFlight 우상단
+&lt;button onClick={() =&gt; useSettingsStore.getState().setSoundEnabled(!settings.soundEnabled)}&gt;
+  {settings.soundEnabled ? &#39;🔊&#39; : &#39;🔇&#39;}
+&lt;/button&gt;
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 6: 통합 테스트 (mocked audio)</strong></li>
+</ul>
+<pre><code class="language-tsx">// tests/sound-cues.test.tsx
+import { vi } from &#39;vitest&#39;;
+vi.mock(&#39;../src/lib/audio&#39;, () =&gt; ({
+  audioBus: { init: vi.fn(), resume: vi.fn(), play: vi.fn(), stop: vi.fn(), setVolume: vi.fn() },
+}));
+
+// ... 전체 플로우 시뮬 + audioBus.play 호출 인자 검증 (tear, takeoff, engine, landing 순서)
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 7: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">npm test -- sound-cues
+git add -A
+git commit -m &quot;feat: wire sound cues to flight transitions&quot;
+</code></pre>
+<hr>
+<h2 id="chunk-7-m7-settings-notifications">Chunk 7: M7 — Settings &amp; Notifications</h2>
+<p><strong>목표</strong>: Settings 페이지 UI(카테고리 CRUD, 볼륨, 알림 토글), Notification API wrapper, 권한 거부 fallback.</p>
+<h3 id="task-71-notification-api-wrapper">Task 7.1: Notification API wrapper</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Create: <code>src/lib/notifications.ts</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-ts">export async function requestPermission(): Promise&lt;NotificationPermission&gt; {
+  if (!(&#39;Notification&#39; in window)) return &#39;denied&#39;;
+  if (Notification.permission !== &#39;default&#39;) return Notification.permission;
+  return await Notification.requestPermission();
+}
+
+export function notify(title: string, body?: string): void {
+  if (Notification.permission !== &#39;granted&#39;) return;
+  new Notification(title, { body });
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: notifications wrapper&quot;
+</code></pre>
+<h3 id="task-72-settings-페이지-ui">Task 7.2: Settings 페이지 UI</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/routes/Settings.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: 구현</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">import { useSettingsStore } from &#39;../store/settingsStore&#39;;
+import { requestPermission } from &#39;../lib/notifications&#39;;
+import { useState } from &#39;react&#39;;
+
+export default function Settings() {
+  const { settings, setVolume, setSoundEnabled, setNotificationsEnabled, addCategory, removeCategory } = useSettingsStore();
+  const [newLabel, setNewLabel] = useState(&#39;&#39;);
+  const [newColor, setNewColor] = useState(&#39;#888&#39;);
+
+  async function toggleNotif(b: boolean) {
+    if (b) {
+      const p = await requestPermission();
+      if (p !== &#39;granted&#39;) {
+        alert(&#39;알림 권한이 거부되어 토글을 다시 끕니다.&#39;);
+        setNotificationsEnabled(false);
+        return;
+      }
+    }
+    setNotificationsEnabled(b);
+  }
+
+  return (
+    &lt;div className=&quot;max-w-2xl mx-auto p-8 space-y-8&quot;&gt;
+      &lt;h1 className=&quot;text-2xl font-bold&quot;&gt;Settings&lt;/h1&gt;
+
+      &lt;section&gt;
+        &lt;h2 className=&quot;font-bold mb-3&quot;&gt;Categories&lt;/h2&gt;
+        &lt;div className=&quot;space-y-2&quot;&gt;
+          {settings.categories.map(c =&gt; (
+            &lt;div key={c.id} className=&quot;flex items-center gap-3 p-3 bg-white rounded border border-slate-200&quot;&gt;
+              &lt;div className=&quot;w-4 h-4 rounded&quot; style={{ backgroundColor: c.color }} /&gt;
+              &lt;span className=&quot;flex-1&quot;&gt;{c.label}&lt;/span&gt;
+              &lt;button onClick={() =&gt; removeCategory(c.id)} className=&quot;text-red-500 text-sm&quot;&gt;Remove&lt;/button&gt;
+            &lt;/div&gt;
+          ))}
+        &lt;/div&gt;
+        &lt;div className=&quot;flex gap-2 mt-3&quot;&gt;
+          &lt;input value={newLabel} onChange={e =&gt; setNewLabel(e.target.value)} placeholder=&quot;라벨&quot; className=&quot;px-3 py-2 border rounded flex-1&quot; /&gt;
+          &lt;input type=&quot;color&quot; value={newColor} onChange={e =&gt; setNewColor(e.target.value)} className=&quot;w-12 h-10 border rounded&quot; /&gt;
+          &lt;button onClick={() =&gt; { if (newLabel) { addCategory({ id: newLabel.toLowerCase(), label: newLabel, color: newColor }); setNewLabel(&#39;&#39;); } }}
+            className=&quot;bg-sunset text-white px-4 rounded&quot;&gt;Add&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section&gt;
+        &lt;h2 className=&quot;font-bold mb-3&quot;&gt;Sound&lt;/h2&gt;
+        &lt;label className=&quot;flex items-center gap-3&quot;&gt;
+          &lt;input type=&quot;checkbox&quot; checked={settings.soundEnabled} onChange={e =&gt; setSoundEnabled(e.target.checked)} /&gt;
+          Enable sounds
+        &lt;/label&gt;
+        &lt;div className=&quot;mt-3&quot;&gt;
+          &lt;label className=&quot;text-sm&quot;&gt;Volume: {Math.round(settings.volume * 100)}%&lt;/label&gt;
+          &lt;input type=&quot;range&quot; min={0} max={1} step={0.05} value={settings.volume}
+            onChange={e =&gt; setVolume(parseFloat(e.target.value))} className=&quot;w-full&quot; /&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section&gt;
+        &lt;h2 className=&quot;font-bold mb-3&quot;&gt;Notifications&lt;/h2&gt;
+        &lt;label className=&quot;flex items-center gap-3&quot;&gt;
+          &lt;input type=&quot;checkbox&quot; checked={settings.notificationsEnabled} onChange={e =&gt; toggleNotif(e.target.checked)} /&gt;
+          알림으로 비행 종료 시점 받기
+        &lt;/label&gt;
+      &lt;/section&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: Settings page (categories, sound, notifications)&quot;
+</code></pre>
+<h3 id="task-73-비행-종료-알림-발사">Task 7.3: 비행 종료 알림 발사</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li><p>Modify: <code>src/flight/steps/InFlight.tsx</code></p>
+</li>
+<li><p><input disabled="" type="checkbox"> <strong>Step 1: onExpire 콜백 안에 알림 발사</strong></p>
+</li>
+</ul>
+<pre><code class="language-tsx">// onExpire 콜백 안에
+import { notify } from &#39;../../lib/notifications&#39;;
+import { useSettingsStore } from &#39;../../store/settingsStore&#39;;
+
+// ...
+if (useSettingsStore.getState().settings.notificationsEnabled) {
+  notify(&#39;Flight landed&#39;, &#39;Your focus session is complete.&#39;);
+}
+</code></pre>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Step 2: 커밋</strong></li>
+</ul>
+<pre><code class="language-bash">git add -A &amp;&amp; git commit -m &quot;feat: fire notification on flight expiry&quot;
+</code></pre>
+<hr>
+<h2 id="chunk-8-m8-deployment">Chunk 8: M8 — Deployment</h2>
+<p><strong>목표</strong>: README 작성, Vercel/Cloudflare Pages 빌드 검증, 수동 테스트 후 라이브 배포.</p>
+<h3 id="task-81-readme">Task 8.1: README</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>README.md</code></li>
+</ul>
+<pre><code class="language-md"># FocusFlight Web
+
+A personal-use focus timer wrapped in a flight-booking ritual.
+
+## Dev
+
+```bash
+npm install
+npm run dev   # http://localhost:5173
+npm test      # vitest
+npm run build # static to dist/
+</code></pre>
+<h2 id="deploy">Deploy</h2>
+<h3 id="vercel">Vercel</h3>
+<ul>
+<li>Framework preset: Vite</li>
+<li>Build command: <code>npm run build</code></li>
+<li>Output: <code>dist</code></li>
+<li>No env vars</li>
+</ul>
+<h3 id="cloudflare-pages">Cloudflare Pages</h3>
+<ul>
+<li>Same as above</li>
+</ul>
+<h2 id="spec-plan">Spec &amp; Plan</h2>
+<ul>
+<li>Spec: <code>docs/specs/2026-05-18-focusflight-web-design.md</code></li>
+<li>Plan: <code>docs/plans/2026-05-18-focusflight-web-implementation.md</code></li>
+</ul>
+<pre><code>
+- [ ] **커밋**
+
+```bash
+git add -A &amp;&amp; git commit -m &quot;docs: README&quot;
+</code></pre>
+<h3 id="task-82-수동-검증-체크리스트">Task 8.2: 수동 검증 체크리스트</h3>
+<p>각 항목 직접 확인 후 체크:</p>
+<ul>
+<li><input disabled="" type="checkbox"> booking → seat → boarding → checkin → inflight → landed 전체 플로우 1회 (실제 25분 또는 단축)</li>
+<li><input disabled="" type="checkbox"> 새로고침 후 ResumeModal 표시 및 Resume/Discard 동작</li>
+<li><input disabled="" type="checkbox"> 백그라운드 탭으로 두고 비행 만료 시 알림 + Landed 화면 (visibilitychange 복귀 시)</li>
+<li><input disabled="" type="checkbox"> Stats 페이지: 1회 비행 후 KPI/차트/테이블 표시</li>
+<li><input disabled="" type="checkbox"> Settings: 카테고리 추가/제거, 볼륨 슬라이더, 알림 토글</li>
+<li><input disabled="" type="checkbox"> 사운드: tear → takeoff → engine → landing 순서 매끄러움</li>
+<li><input disabled="" type="checkbox"> 모바일 (iOS Safari, Android Chrome): drag-to-tear 터치 동작, 사운드 재생, 풀스크린</li>
+<li><input disabled="" type="checkbox"> prefers-reduced-motion: macOS 시스템 설정에서 활성화 후 애니메이션 최소화 확인</li>
+</ul>
+<h3 id="task-83-vercel-배포">Task 8.3: Vercel 배포</h3>
+<ul>
+<li><input disabled="" type="checkbox"> GitHub repo 생성 (private OK), push</li>
+<li><input disabled="" type="checkbox"> Vercel 콘솔에서 import → Vite preset 자동 감지 → Deploy</li>
+<li><input disabled="" type="checkbox"> 배포된 URL에서 위 체크리스트 다시 1회 검증</li>
+<li><input disabled="" type="checkbox"> (옵션) 커스텀 도메인 연결</li>
+</ul>
+<hr>
+<h2 id="완료-후">완료 후</h2>
+<ul>
+<li>모든 마일스톤 task checkbox 채워짐</li>
+<li>모든 단위/통합 테스트 PASS</li>
+<li>라이브 URL 동작</li>
+<li><code>lastCompleted</code> 화면에서 &quot;Book another&quot; 누르면 다시 의식 시작</li>
+</ul>
+<h2 id="후속-v11-아이디어">후속 (v1.1+ 아이디어)</h2>
+<ul>
+<li>WebSocket 동기화로 여러 디바이스 사용</li>
+<li>좌석 사용 빈도에 따른 시각 효과 차등</li>
+<li>Wake Lock API (모바일 In-flight 스크린 sleep 방지)</li>
+<li>사용자 작성 사운드 업로드</li>
+<li>카테고리별 평균 길이 차트</li>
+<li>시간대별 집중 패턴 히트맵</li>
+</ul>
+
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.hljs) window.hljs.highlightAll();
+
+  // Wrap tables for horizontal scroll
+  document.querySelectorAll('.content table').forEach((t) => {
+    if (t.parentElement && t.parentElement.classList.contains('table-wrap')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    t.parentNode.insertBefore(wrap, t);
+    wrap.appendChild(t);
+  });
+
+  // Build seat map (10 rows × 6 seats)
+  const grid = document.querySelector('.seatmap-grid');
+  if (grid) {
+    const cols = ['A','B','C','D','E','F'];
+    const taken = new Set(['3B','5D','7A','9F','2E']);
+    const selected = '1A';
+    for (let r = 1; r <= 10; r++) {
+      for (let c = 0; c < 6; c++) {
+        const label = r + cols[c];
+        const cell = document.createElement('div');
+        cell.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:9.5px;font-family:JetBrains Mono,monospace;color:rgba(245,241,232,0.85);aspect-ratio:1;border-radius:6px;';
+        if (label === selected) {
+          cell.style.background = '#F4A261';
+          cell.style.color = '#0A1628';
+          cell.style.fontWeight = '800';
+          cell.style.boxShadow = '0 0 0 3px rgba(244,162,97,0.25)';
+        } else if (taken.has(label)) {
+          cell.style.background = 'rgba(110,119,129,0.4)';
+          cell.style.opacity = '0.5';
+        } else {
+          cell.style.background = 'rgba(245,241,232,0.12)';
+        }
+        cell.textContent = label;
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // Reading progress
+  const bar = document.querySelector('.progress > div');
+  if (bar) {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const scrolled = h.scrollTop;
+      const total = h.scrollHeight - h.clientHeight;
+      bar.style.width = total > 0 ? (scrolled / total * 100) + '%' : '0%';
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // TOC scrollspy
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length) {
+    const map = new Map();
+    links.forEach((a) => {
+      const id = decodeURIComponent(a.getAttribute('href').slice(1));
+      const el = document.getElementById(id);
+      if (el) map.set(el, a);
+    });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        const link = map.get(e.target);
+        if (!link) return;
+        if (e.isIntersecting) {
+          links.forEach((l) => l.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+    map.forEach((_, el) => observer.observe(el));
+  }
+});
+</script>
+</body>
+</html>
