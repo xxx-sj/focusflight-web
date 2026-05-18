@@ -3,7 +3,7 @@ import { geoEquirectangular, geoPath, type GeoProjection } from 'd3-geo';
 import { feature } from 'topojson-client';
 import type { FeatureCollection, Geometry } from 'geojson';
 import type { Topology } from 'topojson-specification';
-import worldData from 'world-atlas/countries-110m.json';
+import worldData from 'world-atlas/countries-50m.json';
 import type { Country } from '../data/countries';
 
 const MAP_W = 1000;
@@ -25,6 +25,63 @@ const countriesFeature = feature(
 
 function projectLatLng(lng: number, lat: number): [number, number] {
   return projection([lng, lat]) ?? [0, 0];
+}
+
+function Marker({ x, y, label }: { x: number; y: number; label: string }) {
+  return (
+    <g>
+      {/* Outer ring */}
+      <circle cx={x} cy={y} r={6} fill="none" stroke="white" strokeWidth={1.2} strokeOpacity={0.6} />
+      {/* Solid center */}
+      <circle cx={x} cy={y} r={2.8} fill="white" />
+      {/* Label with subtle background pad */}
+      <text
+        x={x + 10}
+        y={y + 3.5}
+        fontSize={9}
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        fontWeight={700}
+        fill="white"
+        paintOrder="stroke"
+        stroke="black"
+        strokeWidth={3}
+        strokeLinejoin="round"
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+/** Top-down airplane silhouette (fuselage, swept wings, tail). Tip points right (x+). */
+function Plane() {
+  return (
+    <g>
+      <path
+        d="M 12,0
+           L 4,-1.5
+           L 1,-7
+           L -2,-7
+           L -1,-1.5
+           L -8,-1.5
+           L -10,-3.5
+           L -12,-3.5
+           L -10.5,0
+           L -12,3.5
+           L -10,3.5
+           L -8,1.5
+           L -1,1.5
+           L -2,7
+           L 1,7
+           L 4,1.5
+           Z"
+        fill="white"
+        stroke="white"
+        strokeWidth={0.4}
+        strokeLinejoin="round"
+      />
+    </g>
+  );
 }
 
 type Props = {
@@ -105,50 +162,16 @@ export default function WorldMap({
 
       {/* Origin / destination markers */}
       {o && origin && (
-        <g>
-          <circle cx={o[0]} cy={o[1]} r={5} fill="white" />
-          <circle cx={o[0]} cy={o[1]} r={10} fill="none" stroke="white" strokeOpacity={0.35} />
-          <text
-            x={o[0] + 12}
-            y={o[1] - 8}
-            fill="white"
-            fontSize={11}
-            fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-            fontWeight={700}
-          >
-            {origin.iata}
-          </text>
-        </g>
+        <Marker x={o[0]} y={o[1]} label={`${origin.iata} · ${origin.nameKo}`} />
       )}
       {d && destination && (
-        <g>
-          <circle cx={d[0]} cy={d[1]} r={5} fill="white" />
-          <circle cx={d[0]} cy={d[1]} r={10} fill="none" stroke="white" strokeOpacity={0.35} />
-          <text
-            x={d[0] + 12}
-            y={d[1] - 8}
-            fill="white"
-            fontSize={11}
-            fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-            fontWeight={700}
-          >
-            {destination.iata}
-          </text>
-        </g>
+        <Marker x={d[0]} y={d[1]} label={`${destination.iata} · ${destination.nameKo}`} />
       )}
 
       {/* Plane (only when route exists) */}
       {o && d && (
         <g transform={`translate(${planePos[0]} ${planePos[1]}) rotate(${planeAngle})`}>
-          {/* Simple plane silhouette pointing right */}
-          <path
-            d="M -8,0 L 10,0 M 0,-5 L 4,0 L 0,5 Z M -4,-3 L 2,-3 M -4,3 L 2,3"
-            fill="white"
-            stroke="white"
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <Plane />
         </g>
       )}
     </svg>
