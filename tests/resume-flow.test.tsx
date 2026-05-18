@@ -17,12 +17,14 @@ describe('Resume flow', () => {
     expect(await screen.findByText(/Resume your flight/)).toBeInTheDocument();
   });
 
-  it('Discard clears active and shows home', async () => {
+  it('Discard clears active and auto-opens a fresh Booking', async () => {
     saveActive({ step: 'inflight', flight: { id: 'x', startedAt: Date.now(), plannedSeconds: 1500, category: 'work', seat: '1A' } });
     const user = userEvent.setup();
     render(<App />);
     await user.click(await screen.findByText('Discard'));
-    expect(screen.getByText('Book a flight')).toBeInTheDocument();
+    // After discard, the "Book a flight" intro is gone — we jump straight to
+    // the Booking step's duration selector.
+    expect(await screen.findByText('25m')).toBeInTheDocument();
   });
 
   it('lands immediately when resuming an already-expired flight', async () => {
