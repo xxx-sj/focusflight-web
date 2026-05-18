@@ -3,6 +3,7 @@ import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
 import { useEffect, useState } from 'react';
+import { audioBus } from '../../lib/audio';
 
 const TEAR_THRESHOLD = 180;
 
@@ -16,7 +17,12 @@ export default function CheckIn() {
   function doTear() {
     if (torn) return;
     setTorn(true);
-    setTimeout(() => startFlight(), 350);
+    audioBus.resume().then(() => audioBus.play('tear'));
+    setTimeout(() => {
+      audioBus.play('takeoff');
+      setTimeout(() => audioBus.play('engine'), 1500);
+      startFlight();
+    }, 350);
   }
 
   useEffect(() => {
