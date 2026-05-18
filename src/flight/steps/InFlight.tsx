@@ -14,8 +14,13 @@ export default function InFlight() {
   const { active, land, abort } = useFlightStore();
   const { settings } = useSettingsStore();
   const sound = useSettingsStore((s) => s.settings.soundEnabled);
+  const volume = useSettingsStore((s) => s.settings.volume);
+  const musicVolume = useSettingsStore((s) => s.settings.musicVolume);
   const setSound = useSettingsStore((s) => s.setSoundEnabled);
+  const setVolume = useSettingsStore((s) => s.setVolume);
+  const setMusicVolume = useSettingsStore((s) => s.setMusicVolume);
   const [, setTick] = useState(0);
+  const [showSoundPanel, setShowSoundPanel] = useState(false);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
@@ -97,12 +102,61 @@ export default function InFlight() {
         )}
       </div>
 
-      <button
-        onClick={() => setSound(!sound)}
-        aria-label={sound ? 'Mute sound' : 'Unmute sound'}
-        className="absolute top-4 right-16 text-white/60 text-lg z-10">
-        {sound ? '🔊' : '🔇'}
-      </button>
+      {/* Sound controls — quick access without leaving the flight */}
+      <div className="absolute top-4 right-16 z-10">
+        <button
+          onClick={() => setShowSoundPanel((v) => !v)}
+          aria-label="Sound controls"
+          className="text-white/70 text-lg hover:text-white"
+        >
+          {sound ? '🔊' : '🔇'}
+        </button>
+        {showSoundPanel && (
+          <div className="absolute top-9 right-0 w-64 bg-black/80 backdrop-blur border border-white/15 rounded-lg p-4 space-y-3 text-white text-xs shadow-xl">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sound}
+                onChange={(e) => setSound(e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>사운드 활성화</span>
+            </label>
+            <div>
+              <div className="flex justify-between mb-1">
+                <span>효과음 (엔진, 기장)</span>
+                <span className="opacity-60">{Math.round(volume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                disabled={!sound}
+                className="w-full accent-orange-400 disabled:opacity-40"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1">
+                <span>음악</span>
+                <span className="opacity-60">{Math.round(musicVolume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={musicVolume}
+                onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+                disabled={!sound}
+                className="w-full accent-orange-400 disabled:opacity-40"
+              />
+            </div>
+          </div>
+        )}
+      </div>
       <button onClick={handleAbort} className="absolute top-4 right-4 text-white/40 text-xs z-10">
         Abort
       </button>
