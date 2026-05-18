@@ -17,15 +17,20 @@ describe('flightStore', () => {
     expect(useFlightStore.getState().active?.step).toBe('booking');
   });
 
-  it('chooses duration/category then advances to seat', () => {
+  it('chooses duration/category then advances to boarding', () => {
     const s = useFlightStore.getState();
     s.startBooking();
     s.setDuration(25);
     s.setCategory('work');
     s.advance();
-    expect(useFlightStore.getState().active?.step).toBe('seat');
+    expect(useFlightStore.getState().active?.step).toBe('boarding');
     expect(useFlightStore.getState().active?.flight.plannedSeconds).toBe(1500);
     expect(useFlightStore.getState().active?.flight.category).toBe('work');
+  });
+
+  it('startBooking auto-assigns a seat', () => {
+    useFlightStore.getState().startBooking();
+    expect(useFlightStore.getState().active?.flight.seat).toMatch(/^([1-9]|10)[A-F]$/);
   });
 
   it('abort clears active without appending history', () => {
@@ -37,8 +42,8 @@ describe('flightStore', () => {
 
   it('startFlight sets startedAt and moves to inflight', () => {
     const s = useFlightStore.getState();
-    s.startBooking(); s.setDuration(25); s.setCategory('work'); s.advance();
-    s.setSeat('12A'); s.advance(); s.advance();
+    s.startBooking(); s.setDuration(25); s.setCategory('work');
+    s.advance(); s.advance();   // booking → boarding → checkin
     s.startFlight();
     expect(useFlightStore.getState().active?.step).toBe('inflight');
     expect(useFlightStore.getState().active?.flight.startedAt).toBeTruthy();
@@ -47,11 +52,11 @@ describe('flightStore', () => {
   it('land completes flight, appends to history, clears active, sets lastCompleted', () => {
     const s = useFlightStore.getState();
     s.startBooking(); s.setDuration(25); s.setCategory('work');
-    s.advance(); s.setSeat('12A'); s.advance(); s.advance(); s.startFlight();
+    s.advance(); s.advance(); s.startFlight();
     s.land();
     expect(useFlightStore.getState().active).toBeNull();
     expect(useFlightStore.getState().lastCompleted?.category).toBe('work');
-    expect(useFlightStore.getState().lastCompleted?.seat).toBe('12A');
+    expect(useFlightStore.getState().lastCompleted?.seat).toMatch(/^([1-9]|10)[A-F]$/);
   });
 
   it('dismissLanded clears the post-flight screen', () => {

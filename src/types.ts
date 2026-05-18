@@ -1,6 +1,6 @@
 // src/types.ts
 
-export type FlightStep = 'booking' | 'seat' | 'boarding' | 'checkin' | 'inflight' | 'landed';
+export type FlightStep = 'booking' | 'boarding' | 'checkin' | 'inflight' | 'landed';
 
 export type Flight = {
   id: string;

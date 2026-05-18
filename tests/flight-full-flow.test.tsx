@@ -25,11 +25,7 @@ describe('Flight full flow', () => {
     await user.selectOptions(selects[0], 'KR');
     await user.selectOptions(selects[1], 'JP');
 
-    await user.click(screen.getByText(/Next: Choose seat/));
-
-    await user.click(screen.getByText('1A'));
     await user.click(screen.getByText(/Next: Boarding pass/));
-
     await user.click(screen.getByText(/Proceed to check-in/));
 
     // bypass drag — directly call startFlight
@@ -41,7 +37,8 @@ describe('Flight full flow', () => {
 
     expect(loadHistory().length).toBe(1);
     expect(loadHistory()[0].category).toBe('work');
-    expect(loadHistory()[0].seat).toBe('1A');
+    // seat is auto-assigned (random) at startBooking now
+    expect(loadHistory()[0].seat).toMatch(/^([1-9]|10)[A-F]$/);
     vi.useRealTimers();
   });
 });

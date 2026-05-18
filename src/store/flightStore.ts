@@ -5,7 +5,13 @@ import { nanoid } from 'nanoid';
 import { elapsedSeconds } from '../lib/timer';
 import { audioBus } from '../lib/audio';
 
-const ORDER: FlightStep[] = ['booking', 'seat', 'boarding', 'checkin', 'inflight', 'landed'];
+const ORDER: FlightStep[] = ['booking', 'boarding', 'checkin', 'inflight', 'landed'];
+
+function randomSeat(): string {
+  const row = Math.floor(Math.random() * 10) + 1;
+  const col = 'ABCDEF'[Math.floor(Math.random() * 6)];
+  return `${row}${col}`;
+}
 
 type State = {
   active: ActiveFlight | null;
@@ -41,7 +47,7 @@ export const useFlightStore = create<State>((set, get) => ({
   dismissLanded: () => set({ lastCompleted: null }),
 
   startBooking: () => {
-    const a: ActiveFlight = { step: 'booking', flight: { id: nanoid(8) } };
+    const a: ActiveFlight = { step: 'booking', flight: { id: nanoid(8), seat: randomSeat() } };
     set({ active: a }); persist(a);
   },
 

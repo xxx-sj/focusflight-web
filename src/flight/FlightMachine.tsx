@@ -6,7 +6,6 @@ import { isExpired } from '../lib/timer';
 import { audioBus } from '../lib/audio';
 import ResumeModal from './ResumeModal';
 import Booking from './steps/Booking';
-import SeatSelection from './steps/SeatSelection';
 import BoardingPass from './steps/BoardingPass';
 import CheckIn from './steps/CheckIn';
 import InFlight from './steps/InFlight';
@@ -70,7 +69,6 @@ export default function FlightMachine() {
   function renderStep() {
     switch (active!.step) {
       case 'booking': return <Booking />;
-      case 'seat': return <SeatSelection />;
       case 'boarding': return <BoardingPass />;
       case 'checkin': return <CheckIn />;
       case 'inflight': return <InFlight />;
