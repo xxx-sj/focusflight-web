@@ -57,26 +57,28 @@ function Marker({ x, y, label }: { x: number; y: number; label: string }) {
 function Plane() {
   return (
     <g>
+      {/* Soft halo so the plane pops against the dark map */}
+      <circle r={6} fill="#F4A261" opacity={0.22} />
       <path
-        d="M 12,0
-           L 4,-1.5
-           L 1,-7
-           L -2,-7
-           L -1,-1.5
-           L -8,-1.5
-           L -10,-3.5
-           L -12,-3.5
-           L -10.5,0
-           L -12,3.5
-           L -10,3.5
-           L -8,1.5
-           L -1,1.5
-           L -2,7
-           L 1,7
-           L 4,1.5
+        d="M 8,0
+           L 2.6,-1
+           L 0.6,-4.6
+           L -1.3,-4.6
+           L -0.6,-1
+           L -5.3,-1
+           L -6.6,-2.3
+           L -8,-2.3
+           L -7,0
+           L -8,2.3
+           L -6.6,2.3
+           L -5.3,1
+           L -0.6,1
+           L -1.3,4.6
+           L 0.6,4.6
+           L 2.6,1
            Z"
-        fill="white"
-        stroke="white"
+        fill="#F4A261"
+        stroke="#0A1628"
         strokeWidth={0.4}
         strokeLinejoin="round"
       />

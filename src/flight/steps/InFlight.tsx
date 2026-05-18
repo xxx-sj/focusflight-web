@@ -70,8 +70,8 @@ export default function InFlight() {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center gap-6 bg-black text-white">
-      {/* World map background — fills the viewport */}
-      <div className="absolute inset-0">
+      {/* World map background — fills the viewport with a little breathing room */}
+      <div className="absolute inset-0 p-6 sm:p-10">
         <WorldMap
           origin={origin}
           destination={destination}
