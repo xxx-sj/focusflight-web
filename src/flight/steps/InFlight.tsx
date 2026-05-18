@@ -7,11 +7,11 @@ import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
 import { findTrack } from '../../lofi';
-import { findCountry, COUNTRIES } from '../../data/countries';
+import { findCountry } from '../../data/countries';
 import { elapsedSeconds } from '../../lib/timer';
 
 export default function InFlight() {
-  const { active, land, abort, setOrigin, setDestination } = useFlightStore();
+  const { active, land, abort } = useFlightStore();
   const { settings } = useSettingsStore();
   const sound = useSettingsStore((s) => s.settings.soundEnabled);
   const setSound = useSettingsStore((s) => s.setSoundEnabled);
@@ -106,34 +106,6 @@ export default function InFlight() {
       <button onClick={handleAbort} className="absolute top-4 right-4 text-white/40 text-xs z-10">
         Abort
       </button>
-
-      {/* Inline route picker for legacy flights with no route set. */}
-      {!hasUserRoute && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 bg-white/10 backdrop-blur px-4 py-3 rounded-lg border border-white/15 text-white text-xs flex items-center gap-3">
-          <span className="opacity-70">경로를 선택하면 지도에 표시됩니다</span>
-          <select
-            defaultValue={active.origin ?? ''}
-            onChange={(e) => setOrigin(e.target.value || null)}
-            className="bg-black/40 border border-white/20 rounded px-2 py-1"
-          >
-            <option value="">From</option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
-            ))}
-          </select>
-          <span>→</span>
-          <select
-            defaultValue={active.destination ?? ''}
-            onChange={(e) => setDestination(e.target.value || null)}
-            className="bg-black/40 border border-white/20 rounded px-2 py-1"
-          >
-            <option value="">To</option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code} disabled={c.code === active.origin}>{c.nameKo} ({c.iata})</option>
-            ))}
-          </select>
-        </div>
-      )}
     </div>
   );
 }
