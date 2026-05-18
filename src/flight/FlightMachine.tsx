@@ -1,5 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFlightStore } from '../store/flightStore';
+import { loadActive } from '../lib/storage';
+import { isExpired } from '../lib/timer';
+import ResumeModal from './ResumeModal';
 import Booking from './steps/Booking';
 import SeatSelection from './steps/SeatSelection';
 import BoardingPass from './steps/BoardingPass';
@@ -8,9 +11,36 @@ import InFlight from './steps/InFlight';
 import Landed from './steps/Landed';
 
 export default function FlightMachine() {
-  const { active, lastCompleted, hydrate, startBooking } = useFlightStore();
+  const { active, lastCompleted, hydrate, startBooking, abort, land } = useFlightStore();
+  const [showResume, setShowResume] = useState(false);
 
-  useEffect(() => { hydrate(); }, [hydrate]);
+  useEffect(() => {
+    const a = loadActive();
+    if (a) setShowResume(true);
+    hydrate();
+  }, [hydrate]);
+
+  function onResume() {
+    setShowResume(false);
+    const a = useFlightStore.getState().active;
+    if (
+      a?.step === 'inflight' &&
+      a.flight.startedAt &&
+      a.flight.plannedSeconds &&
+      isExpired(a.flight.startedAt, a.flight.plannedSeconds)
+    ) {
+      land();
+    }
+  }
+
+  function onDiscard() {
+    abort();
+    setShowResume(false);
+  }
+
+  if (showResume) {
+    return <ResumeModal onResume={onResume} onAbort={onDiscard} />;
+  }
 
   if (!active && lastCompleted) return <Landed flight={lastCompleted} />;
 
