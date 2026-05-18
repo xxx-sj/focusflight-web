@@ -4,7 +4,6 @@ import { useFlightStore } from '../store/flightStore';
 import { loadActive } from '../lib/storage';
 import { isExpired } from '../lib/timer';
 import { audioBus } from '../lib/audio';
-import { findTrack } from '../lofi';
 import ResumeModal from './ResumeModal';
 import Booking from './steps/Booking';
 import SeatSelection from './steps/SeatSelection';
@@ -40,16 +39,13 @@ export default function FlightMachine() {
       return;
     }
 
-    // Restart sounds if user is being dropped back into an active flight.
     if (a?.step === 'inflight') {
       audioBus.play('engine');
-      const track = findTrack(a.lofiTrack);
-      if (track) audioBus.playMusic(track.url);
+      // Music auto-restarts via <MusicLayer> based on active.step / lofiTrack.
     }
   }
 
   function onDiscard() {
-    audioBus.stopMusic();
     abort();
     setShowResume(false);
   }

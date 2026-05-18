@@ -43,20 +43,12 @@ export default function InFlight() {
     };
   }, []);
 
-  // Keep music playing across the in-flight phase. Booking step starts it on
-  // selection; this effect re-asserts in case of a page reload mid-flight.
-  useEffect(() => {
-    const track = findTrack(active?.lofiTrack);
-    if (track) audioBus.playMusic(track.url);
-  }, [active?.lofiTrack]);
-
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find(c => c.id === active.flight.category);
   const track = findTrack(active.lofiTrack);
 
   function handleExpire() {
     audioBus.stop('engine');
-    audioBus.stopMusic();
     audioBus.play('captain_landing');
     // Landing chime layered after captain's announcement
     setTimeout(() => audioBus.play('landing'), 5500);
@@ -69,7 +61,6 @@ export default function InFlight() {
   function handleAbort() {
     if (confirm('Abort flight?')) {
       audioBus.stop('engine');
-      audioBus.stopMusic();
       abort();
     }
   }

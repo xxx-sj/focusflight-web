@@ -103,13 +103,11 @@ export const useFlightStore = create<State>((set, get) => ({
     };
     appendFlight(flight);
     audioBus.stop('engine');
-    audioBus.stopMusic();
     set({ active: null, lastCompleted: flight }); persist(null);
   },
 
   abort: () => {
     audioBus.stop('engine');
-    audioBus.stopMusic();
     set({ active: null });
     persist(null);
   },

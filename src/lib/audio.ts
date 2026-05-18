@@ -11,16 +11,15 @@ const URLS: Record<SoundId, string> = {
 // When music plays, engine ducks to this fraction of its normal volume.
 const ENGINE_AMBIENT_FACTOR = 0.35;
 
+/**
+ * Effects-only audio bus (engine / captain / takeoff / landing). In-flight
+ * music is rendered declaratively by <MusicLayer>; this class only needs to
+ * know whether music is active so it can duck the engine accordingly.
+ */
 export class AudioBus {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private elements: Map<SoundId, HTMLAudioElement> = new Map();
-  // Music intentionally uses a raw HTMLAudioElement (no Web Audio routing) so
-  // that el.play() can run synchronously inside a user-gesture handler — the
-  // Promise-based ctx.resume().then(...) chain otherwise loses the gesture
-  // affordance and the browser blocks autoplay.
-  private musicEl: HTMLAudioElement | null = null;
-  private musicUrl: string | null = null;
   private volume = 0.6;
   private musicVolume = 0.4;
   private musicActive = false;
@@ -60,15 +59,18 @@ export class AudioBus {
     this.volume = Math.max(0, Math.min(1, v));
     if (this.master) this.master.gain.value = this.volume;
   }
-
   getVolume(): number { return this.volume; }
 
   setMusicVolume(v: number): void {
     this.musicVolume = Math.max(0, Math.min(1, v));
-    if (this.musicEl) this.musicEl.volume = this.musicVolume;
   }
-
   getMusicVolume(): number { return this.musicVolume; }
+
+  /** Notify the bus that music is playing — used to duck engine ambient. */
+  setMusicActive(active: boolean): void {
+    this.musicActive = active;
+    this.applyEngineDucking();
+  }
 
   private fade(toValue: number, durationMs = 200): void {
     if (!this.ctx || !this.master) return;
@@ -88,7 +90,6 @@ export class AudioBus {
     const el = this.elements.get(id);
     if (!el) return;
     if (id === 'engine') {
-      // Honor ducking the moment engine starts (re-checked at every play).
       el.volume = this.musicActive ? ENGINE_AMBIENT_FACTOR : 1.0;
     }
     const start = () => {
@@ -117,39 +118,6 @@ export class AudioBus {
       el.pause();
       el.currentTime = 0;
     }
-  }
-
-  // Music uses raw HTMLAudioElement with its own volume property — independent
-  // from AudioContext, so play() runs synchronously inside the click handler.
-  playMusic(url: string): void {
-    if (this.musicUrl === url && this.musicEl && !this.musicEl.paused) return;
-    this.stopMusic();
-    try {
-      const el = new Audio(url);
-      el.loop = true;
-      el.preload = 'auto';
-      el.volume = this.musicVolume;
-      el.play().catch(() => { /* missing or blocked */ });
-      this.musicEl = el;
-      this.musicUrl = url;
-      this.musicActive = true;
-      this.applyEngineDucking();
-    } catch (e) {
-      console.warn('[audioBus] playMusic threw:', e);
-      this.musicEl = null;
-      this.musicUrl = null;
-      this.musicActive = false;
-    }
-  }
-
-  stopMusic(): void {
-    if (this.musicEl) {
-      try { this.musicEl.pause(); } catch { /* ignore */ }
-      this.musicEl = null;
-    }
-    this.musicUrl = null;
-    this.musicActive = false;
-    this.applyEngineDucking();
   }
 }
 

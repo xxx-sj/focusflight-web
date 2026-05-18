@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import { audioBus } from '../../lib/audio';
 import BoardingPassCard from '../../components/BoardingPassCard';
 
 export default function BoardingPass() {
@@ -26,7 +25,7 @@ export default function BoardingPass() {
         />
       </motion.div>
       <div className="flex gap-3 justify-center">
-        <button onClick={() => { audioBus.stopMusic(); abort(); }} className="px-4 py-2 text-slate-500">Cancel</button>
+        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
         <button onClick={advance} className="bg-orange-500 text-white px-6 py-2 rounded-lg">
           Proceed to check-in →
         </button>

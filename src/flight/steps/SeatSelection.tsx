@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useFlightStore } from '../../store/flightStore';
 import { loadHistory } from '../../lib/storage';
-import { audioBus } from '../../lib/audio';
 import { backgroundFor } from '../../lib/seatTheme';
 import SeatMap from '../../components/SeatMap';
 
@@ -29,7 +28,7 @@ export default function SeatSelection() {
           </div>
         )}
         <div className="flex gap-3 justify-end">
-          <button onClick={() => { audioBus.stopMusic(); abort(); }} className="px-4 py-2 text-white/70 hover:text-white">Cancel</button>
+          <button onClick={abort} className="px-4 py-2 text-white/70 hover:text-white">Cancel</button>
           <button onClick={advance} disabled={!seat}
             className="bg-white text-slate-900 px-6 py-2 rounded-lg disabled:opacity-40 font-semibold shadow-md">
             Next: Boarding pass →

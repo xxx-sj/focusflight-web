@@ -4,7 +4,6 @@ import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
 import { useEffect, useState } from 'react';
 import { audioBus } from '../../lib/audio';
-import { findTrack } from '../../lofi';
 
 const TEAR_THRESHOLD = 180;
 
@@ -19,20 +18,14 @@ export default function CheckIn() {
     if (torn) return;
     setTorn(true);
     audioBus.resume();
-
-    // Start preset music *inside* the user-gesture handler — browsers block
-    // autoplay if play() runs after a setTimeout / React commit.
-    const presetTrack = findTrack(active?.lofiTrack);
-    if (presetTrack) {
-      audioBus.playMusic(presetTrack.url);
-    }
-
     setTimeout(() => {
       audioBus.play('takeoff');
       // Engine ambient fades in after the takeoff roar peaks
       setTimeout(() => audioBus.play('engine'), 1500);
       // Captain announcement on top of engine
       setTimeout(() => audioBus.play('captain_takeoff'), 3500);
+      // startFlight transitions to inflight; <MusicLayer> auto-plays the
+      // selected lofi/YouTube track at that point via React-managed elements.
       startFlight();
     }, 350);
   }
@@ -87,7 +80,7 @@ export default function CheckIn() {
       </div>
       <p className="text-center text-xs text-slate-500">Drag the orange stub right — or hold Space</p>
       <div className="flex gap-3 justify-center">
-        <button onClick={() => { audioBus.stopMusic(); abort(); }} className="px-4 py-2 text-slate-500">Cancel</button>
+        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
       </div>
     </div>
   );
