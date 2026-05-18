@@ -17,8 +17,9 @@ const hiddenStyle: React.CSSProperties = {
 
 const visibleVideoStyle: React.CSSProperties = {
   position: 'fixed',
-  bottom: 88,           // sit above the bottom control bar
-  right: 16,
+  top: '50%',
+  left: 16,
+  transform: 'translateY(-50%)',
   width: 320,
   height: 180,
   borderRadius: 12,
