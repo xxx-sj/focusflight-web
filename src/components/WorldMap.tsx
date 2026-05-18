@@ -135,7 +135,10 @@ export default function WorldMap({
   return (
     <svg
       viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-      preserveAspectRatio="xMidYMid meet"
+      // "slice" makes the map cover the entire container, cropping the
+      // less-interesting poles on wide screens and the Pacific edges on
+      // narrow ones — the focus stays on the active flight path either way.
+      preserveAspectRatio="xMidYMid slice"
       className={className}
     >
       {/* Continents from world-atlas TopoJSON */}
