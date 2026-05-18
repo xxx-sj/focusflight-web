@@ -98,6 +98,7 @@ export const useFlightStore = create<State>((set, get) => ({
   startFlight: () => set(s => {
     if (!s.active) return s;
     const a: ActiveFlight = {
+      ...s.active,                              // preserve origin/destination/lofiTrack
       step: 'inflight',
       flight: { ...s.active.flight, startedAt: Date.now() },
     };

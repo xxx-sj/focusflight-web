@@ -49,6 +49,18 @@ describe('flightStore', () => {
     expect(useFlightStore.getState().active?.flight.startedAt).toBeTruthy();
   });
 
+  it('startFlight preserves origin/destination/lofiTrack across the transition', () => {
+    const s = useFlightStore.getState();
+    s.startBooking(); s.setDuration(25); s.setCategory('work');
+    s.setOrigin('KR'); s.setDestination('JP'); s.setLofiTrack('cafe');
+    s.advance(); s.advance();   // booking → boarding → checkin
+    s.startFlight();
+    const a = useFlightStore.getState().active;
+    expect(a?.origin).toBe('KR');
+    expect(a?.destination).toBe('JP');
+    expect(a?.lofiTrack).toBe('cafe');
+  });
+
   it('land completes flight, appends to history, clears active, sets lastCompleted', () => {
     const s = useFlightStore.getState();
     s.startBooking(); s.setDuration(25); s.setCategory('work');
