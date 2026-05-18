@@ -7,22 +7,28 @@ export type LofiTrack = {
 
 export const LOFI_TRACKS: LofiTrack[] = [
   {
-    id: 'rainy-pad',
-    label: '🌧 Rain',
-    url: '/lofi/rainy-pad.mp3',
-    description: 'Pink noise 기반 비 소리 화이트노이즈. 가장 균질한 배경.',
-  },
-  {
     id: 'cafe',
-    label: '☕ Cafe Murmur',
+    label: '☕ Cafe',
     url: '/lofi/cafe.mp3',
-    description: 'Brown noise 럼블 + 미드주파 머머. 카페 배경 소음 느낌.',
+    description: '럼블 + 보이스밴드 머머 + 클링크',
   },
   {
-    id: 'forest',
-    label: '🌲 Wind & Leaves',
-    url: '/lofi/forest.mp3',
-    description: '저주파 바람 + 고주파 잎사귀. 야외 자연 화이트노이즈.',
+    id: 'rain',
+    label: '🌧 Rain',
+    url: '/lofi/rain.mp3',
+    description: '강한 빗소리 + 낮은 천둥 럼블',
+  },
+  {
+    id: 'wind',
+    label: '🌬 Low Wind',
+    url: '/lofi/wind.mp3',
+    description: '저주파 바람 (서브베이스)',
+  },
+  {
+    id: 'highs',
+    label: '🍃 High Tones',
+    url: '/lofi/highs.mp3',
+    description: '고주파 잎사귀/공기 사운드',
   },
 ];
 

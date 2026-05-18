@@ -1,18 +1,21 @@
 # Lofi Track Credits
 
-현재 트랙들은 모두 **ffmpeg로 생성한 컬러드 노이즈 기반 ambient**입니다. 라이선스 제약 없음.
+All tracks are **procedurally generated noise via ffmpeg**. No licensing constraints.
 
-| 파일 | 생성 방법 | 특징 |
-|---|---|---|
-| `rainy-pad.mp3` | pink noise + bandpass 150-5kHz + compressor | 비/샤워 같은 일정한 high-frequency 화이트노이즈 |
-| `cafe.mp3` | brown noise (lowpass 500Hz) + pink noise (bandpass 1100-1900Hz) | 카페 럼블 + 머머 ambient |
-| `forest.mp3` | brown noise (lowpass 350Hz) + pink noise (highpass 1.2kHz) | 바람 럼블 + 잎사귀 rustle |
+| 파일 | 합성 방법 |
+|---|---|
+| `cafe.mp3` | brown noise (lowpass 450Hz, rumble) + pink noise (bandpass 950-1650Hz, voice murmur) + white noise (bandpass 2750-3250Hz, clinks) |
+| `rain.mp3` | pink noise (highpass 300, lowpass 7000Hz, rain texture) + brown noise (lowpass 250Hz, thunder rumble) |
+| `wind.mp3` | brown noise (lowpass 180Hz only, sub-bass wind) |
+| `highs.mp3` | pink noise (highpass 2500, lowpass 8000Hz, airy/leaves) |
 
-**한계** — 실제 카페/숲 녹음이 아니라 노이즈 합성입니다. 진짜 환경음을 원하시면:
-- Booking 단계의 **YouTube URL** 입력 기능 사용 (lofi cafe, rain sounds 채널 추천)
-- 또는 본인이 받은 mp3 파일을 같은 파일명으로 덮어쓰기
+각 트랙은 ~60초 길이, 128kbps mp3, seamless loop (no fade in/out).
 
-**진짜 ambient 소스 추천**
-- [Pixabay sound effects](https://pixabay.com/sound-effects/) — CC0
-- [freesound.org](https://freesound.org/) — CC-BY/CC0
-- YouTube: "rain sounds 10 hours", "cafe ambient noise"
+## 진짜 환경음으로 교체하려면
+
+같은 파일명으로 mp3 덮어쓰기. 추천 소스:
+- [Pixabay Sound Effects](https://pixabay.com/sound-effects/) — CC0
+- [Freesound](https://freesound.org/) — CC0/CC-BY
+- [BBC Sound Effects](https://sound-effects.bbcrewind.co.uk/) — Personal use OK
+
+또는 Booking에서 **YouTube URL**을 붙여넣어 실제 ambient 영상을 직접 재생할 수 있습니다 (사운드 패널에서 볼륨 조절 가능).
