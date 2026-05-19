@@ -109,6 +109,11 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
   const mapRef = useRef<MlMap | null>(null);
   const planeRef = useRef<Marker | null>(null);
   const pathRef = useRef<Position[]>([]);
+  // Fixed camera bearing — the initial great-circle bearing from origin to
+  // destination. Using a constant bearing avoids steep-pitch swaying: with
+  // pitch 72° the camera orbits the plane on each bearing change, so even a
+  // 0.1° tracking adjustment moves the visible world noticeably side-to-side.
+  const cameraBearingRef = useRef<number>(0);
   const loadedRef = useRef<boolean>(false);
   // Latest props mirrored into refs so the rAF loop always reads the freshest
   // values without restarting the animation when they change.
@@ -183,6 +188,10 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
           .addTo(map);
 
         pathRef.current = buildPath(origin, destination);
+        cameraBearingRef.current = bearingDeg(
+          [origin.lng, origin.lat],
+          [destination.lng, destination.lat],
+        );
       }
     });
 
@@ -254,6 +263,9 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
       const bearing = bearingDeg(pos, posAhead);
 
       plane.setLngLat(pos);
+      // rotationAlignment 'map' applies the rotation in map-space, so the
+      // plane silhouette always points along its actual great-circle heading
+      // regardless of the (fixed) camera bearing.
       plane.setRotation(bearing - 90);
 
       const currentMode = modeRef.current;
@@ -262,7 +274,7 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
           center: pos,
           zoom: followZoomRef.current,
           pitch: 72,
-          bearing,
+          bearing: cameraBearingRef.current,
         });
         lastMode = 'follow';
       } else if (origin && destination) {

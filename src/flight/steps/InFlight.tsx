@@ -83,7 +83,8 @@ export default function InFlight() {
   }, []);
 
   // FlightMap drives plane + camera via its own requestAnimationFrame loop,
-  // so this tick exists only to refresh the HUD (time + distance) at 1 Hz.
+  // so this tick exists only to refresh the HUD (time at 1 Hz; distance is
+  // quantized to a 2 s cadence below).
   useEffect(() => {
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
@@ -121,10 +122,11 @@ export default function InFlight() {
     : 0;
   const originLabel = origin?.code ?? '';
   const destLabel = destination?.code ?? '';
-  // Distance display uses the whole-second elapsed value so the counter
-  // ticks down once per second (matches the time HUD). The map + camera
-  // still use the higher-precision `progress` so the plane glides smoothly.
-  const displayProgress = Math.max(0, Math.min(1, elapsed / active.flight.plannedSeconds));
+  // Distance display is quantized to a 2-second cadence so the counter only
+  // decrements every other tick. The plane + camera still use the
+  // millisecond-precision progress inside FlightMap, so motion stays smooth.
+  const distanceElapsed = Math.floor(elapsed / 2) * 2;
+  const displayProgress = Math.max(0, Math.min(1, distanceElapsed / active.flight.plannedSeconds));
   const remainingKm = Math.max(0, totalKm * (1 - displayProgress));
   const remainingSec = Math.max(0, active.flight.plannedSeconds - elapsed);
 
@@ -175,8 +177,17 @@ export default function InFlight() {
           {satellite ? '🛰️ 위성' : '🗺️ 지도'}
         </button>
         {viewMode === 'follow' ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
-            <span className="opacity-60">줌</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
+            <span className="opacity-60 px-1">줌</span>
+            <button
+              type="button"
+              onClick={() => setFollowZoom((z) => Math.max(4, Math.round((z - 0.5) * 2) / 2))}
+              aria-label="줌 작게"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-30"
+              disabled={followZoom <= 4}
+            >
+              ◀
+            </button>
             <input
               type="range"
               min={4}
@@ -187,11 +198,29 @@ export default function InFlight() {
               className="w-24 accent-orange-400"
               aria-label="3인칭 줌"
             />
-            <span className="font-mono opacity-70 w-6 text-right">{followZoom.toFixed(1)}</span>
+            <button
+              type="button"
+              onClick={() => setFollowZoom((z) => Math.min(18, Math.round((z + 0.5) * 2) / 2))}
+              aria-label="줌 크게"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-30"
+              disabled={followZoom >= 18}
+            >
+              ▶
+            </button>
+            <span className="font-mono opacity-70 w-7 text-right pr-1">{followZoom.toFixed(1)}</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
-            <span className="opacity-60">줌</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
+            <span className="opacity-60 px-1">줌</span>
+            <button
+              type="button"
+              onClick={() => setOverviewZoom((z) => Math.max(1, Math.round((z - 0.5) * 2) / 2))}
+              aria-label="줌 작게"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-30"
+              disabled={overviewZoom <= 1}
+            >
+              ◀
+            </button>
             <input
               type="range"
               min={1}
@@ -202,7 +231,16 @@ export default function InFlight() {
               className="w-24 accent-orange-400"
               aria-label="전체 항로 줌"
             />
-            <span className="font-mono opacity-70 w-6 text-right">{overviewZoom.toFixed(1)}</span>
+            <button
+              type="button"
+              onClick={() => setOverviewZoom((z) => Math.min(8, Math.round((z + 0.5) * 2) / 2))}
+              aria-label="줌 크게"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-30"
+              disabled={overviewZoom >= 8}
+            >
+              ▶
+            </button>
+            <span className="font-mono opacity-70 w-7 text-right pr-1">{overviewZoom.toFixed(1)}</span>
           </div>
         )}
         <button
