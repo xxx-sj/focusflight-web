@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
+import { distance as turfDistance } from '@turf/distance';
+import { point } from '@turf/helpers';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import Countdown from '../../components/Countdown';
-import WorldMap from '../../components/WorldMap';
+import FlightMap, { type ViewMode } from '../../components/FlightMap';
 import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
 import { findTrack } from '../../lofi';
 import { findCountry } from '../../data/countries';
-import { elapsedSeconds } from '../../lib/timer';
+import { elapsedSeconds, formatMMSS } from '../../lib/timer';
 import { extractYouTubeId, isYouTubeTrack, youtubeIdFromTrack, YT_PREFIX } from '../../lib/youtube';
 import TodoPanel from '../TodoPanel';
 import { useTodoStore } from '../../store/todoStore';
@@ -28,6 +30,7 @@ export default function InFlight() {
   const [showSoundPanel, setShowSoundPanel] = useState(false);
   const [showYtPanel, setShowYtPanel] = useState(false);
   const [showTodos, setShowTodos] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
@@ -99,34 +102,69 @@ export default function InFlight() {
     }
   }
 
+  // Total + remaining distance (great-circle km).
+  const totalKm = origin && destination
+    ? turfDistance(point([origin.lng, origin.lat]), point([destination.lng, destination.lat]), { units: 'kilometers' })
+    : 0;
+  const remainingKm = Math.max(0, totalKm * (1 - progress));
+  const remainingSec = Math.max(0, active.flight.plannedSeconds - elapsed);
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex flex-col items-center justify-center gap-6 bg-black text-white">
-      {/* World map background — fills the viewport with a little breathing room */}
-      <div className="absolute inset-0 p-6 sm:p-10">
-        <WorldMap
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black text-white">
+      {/* Interactive map background filling the viewport */}
+      <div className="absolute inset-0">
+        <FlightMap
           origin={origin}
           destination={destination}
           progress={progress}
-          className="w-full h-full opacity-90"
+          mode={viewMode}
+          className="w-full h-full"
         />
       </div>
 
-      {/* Countdown + meta on top */}
-      <div className="relative z-10 flex flex-col items-center gap-4">
+      {/* Top-center HUD: time + distance */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none">
+        <div className="flex items-center gap-6 bg-black/50 backdrop-blur px-5 py-2 rounded-full border border-white/15">
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-white/50 uppercase tracking-widest">남은 시간</div>
+            <div className="text-2xl font-mono font-bold leading-none">{formatMMSS(remainingSec)}</div>
+          </div>
+          <div className="w-px h-9 bg-white/15" />
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-white/50 uppercase tracking-widest">남은 거리</div>
+            <div className="text-2xl font-mono font-bold leading-none">
+              {remainingKm < 10 ? remainingKm.toFixed(1) : Math.round(remainingKm).toLocaleString()}<span className="text-sm ml-0.5">km</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-white/60 text-xs tracking-widest font-mono mt-1">
+          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `좌석 ${active.flight.seat}`}
+        </div>
+      </div>
+
+      {/* View-mode toggle (top-right) */}
+      <button
+        onClick={() => setViewMode((m) => (m === 'overview' ? 'follow' : 'overview'))}
+        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs hover:bg-white/15"
+      >
+        {viewMode === 'overview' ? '🛰️ 전체 항로' : '✈️ 3인칭'}
+      </button>
+
+      {/* Countdown still rendered (hidden) so its onExpire effect fires at 0 */}
+      <div className="hidden">
         <Countdown
           startedAt={active.flight.startedAt}
           plannedSeconds={active.flight.plannedSeconds}
           onExpire={handleExpire}
         />
-        <div className="text-white/70 text-sm tracking-widest font-mono">
-          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `좌석 ${active.flight.seat}`} · {active.flight.plannedSeconds / 60}분
-        </div>
-        {track && (
-          <div className="text-white/50 text-xs tracking-widest font-mono">
-            ♪ 재생 중: {track.label}
-          </div>
-        )}
       </div>
+
+      {/* Now-playing track label below the HUD */}
+      {track && (
+        <div className="absolute top-[120px] left-1/2 -translate-x-1/2 z-10 text-white/50 text-xs tracking-widest font-mono pointer-events-none">
+          ♪ 재생 중: {track.label}
+        </div>
+      )}
 
       {/* Backdrop — closes any open popup when user clicks the map area */}
       {(showSoundPanel || showYtPanel) && (
