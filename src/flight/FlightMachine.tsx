@@ -26,19 +26,16 @@ export default function FlightMachine() {
   useEffect(() => {
     const a = loadActive();
     if (!a) return;
-    // Defensive cleanup: a legacy saved flight whose step no longer exists
-    // (e.g. the removed 'seat' step) should be discarded rather than carried
-    // forward — its render would silently blank the page.
-    if (!VALID_STEPS.has(a.step)) {
+    // Persistence policy (see flightStore): only `step === 'inflight'` ever
+    // gets written. Anything else in localStorage is either legacy data
+    // from before that policy, or a step that no longer exists in the
+    // current state machine — discard it either way.
+    if (!VALID_STEPS.has(a.step) || a.step !== 'inflight') {
       saveActive(null);
       return;
     }
-    if (a.step === 'inflight') {
-      setShowResume(true);
-    } else {
-      hydrate();
-    }
-  }, [hydrate]);
+    setShowResume(true);
+  }, []);
 
   // When nothing else is happening (no resume modal, no active flight, no
   // landing screen, no saved flight to resume), skip the "Book a flight"

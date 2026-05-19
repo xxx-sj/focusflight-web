@@ -31,9 +31,22 @@ type State = {
   setDestination: (code: string | null) => void;
 };
 
-function persist(active: ActiveFlight | null) {
-  saveActive(active);
-}
+/**
+ * Persistence policy
+ * ──────────────────
+ * The active flight is only written to localStorage *after the timer has
+ * actually started* (stub tear → `startFlight()`). All pre-flight setup
+ * (booking / boarding / checkin) is in-memory only — a refresh during setup
+ * just starts a fresh booking, which is what you'd expect since nothing
+ * irreversible happened yet.
+ *
+ *   - startFlight() → save (only persistence write during a flight's life)
+ *   - abort()       → clear
+ *   - land()        → clear
+ *
+ * Everything else (startBooking, setDuration, advance, setOrigin, …) updates
+ * the Zustand store but does *not* touch localStorage.
+ */
 
 export const useFlightStore = create<State>((set, get) => ({
   active: null,
@@ -48,51 +61,44 @@ export const useFlightStore = create<State>((set, get) => ({
 
   startBooking: () => {
     const a: ActiveFlight = { step: 'booking', flight: { id: nanoid(8), seat: randomSeat() } };
-    set({ active: a }); persist(a);
+    set({ active: a });
   },
 
   setDuration: (minutes) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, flight: { ...s.active.flight, plannedSeconds: minutes * 60 } };
-    persist(a); return { active: a };
+    return { active: { ...s.active, flight: { ...s.active.flight, plannedSeconds: minutes * 60 } } };
   }),
 
   setCategory: (id) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, flight: { ...s.active.flight, category: id } };
-    persist(a); return { active: a };
+    return { active: { ...s.active, flight: { ...s.active.flight, category: id } } };
   }),
 
   setSeat: (seat) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, flight: { ...s.active.flight, seat } };
-    persist(a); return { active: a };
+    return { active: { ...s.active, flight: { ...s.active.flight, seat } } };
   }),
 
   setLofiTrack: (id) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, lofiTrack: id };
-    persist(a); return { active: a };
+    return { active: { ...s.active, lofiTrack: id } };
   }),
 
   setOrigin: (code) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, origin: code };
-    persist(a); return { active: a };
+    return { active: { ...s.active, origin: code } };
   }),
 
   setDestination: (code) => set(s => {
     if (!s.active) return s;
-    const a = { ...s.active, destination: code };
-    persist(a); return { active: a };
+    return { active: { ...s.active, destination: code } };
   }),
 
   advance: () => set(s => {
     if (!s.active) return s;
     const idx = ORDER.indexOf(s.active.step);
     const next = ORDER[Math.min(idx + 1, ORDER.length - 1)];
-    const a = { ...s.active, step: next };
-    persist(a); return { active: a };
+    return { active: { ...s.active, step: next } };
   }),
 
   startFlight: () => set(s => {
@@ -102,13 +108,14 @@ export const useFlightStore = create<State>((set, get) => ({
       step: 'inflight',
       flight: { ...s.active.flight, startedAt: Date.now() },
     };
-    persist(a); return { active: a };
+    saveActive(a);                              // ← only persistence point
+    return { active: a };
   }),
 
   land: () => {
     const a = get().active;
     if (!a || !a.flight.startedAt || !a.flight.plannedSeconds || !a.flight.category || !a.flight.seat) {
-      set({ active: null }); persist(null); return;
+      set({ active: null }); saveActive(null); return;
     }
     const completedAt = Date.now();
     const actualSeconds = Math.min(elapsedSeconds(a.flight.startedAt), a.flight.plannedSeconds);
@@ -124,12 +131,13 @@ export const useFlightStore = create<State>((set, get) => ({
     };
     appendFlight(flight);
     audioBus.stop('engine');
-    set({ active: null, lastCompleted: flight }); persist(null);
+    set({ active: null, lastCompleted: flight });
+    saveActive(null);
   },
 
   abort: () => {
     audioBus.stop('engine');
     set({ active: null });
-    persist(null);
+    saveActive(null);
   },
 }));
