@@ -1,4 +1,4 @@
-# ✈ FocusFlight Web
+# ✈ 여행 뽀모도로 (Travel Pomodoro)
 
 **비행 의식으로 감싼 개인용 집중 타이머.** 출발지/목적지를 고르고, 보딩패스를 발권하고, stub을 떼어 비행을 시작하면 — 검정 세계 지도 위로 비행기가 great-circle 항로를 따라 움직이며 카운트다운이 흐른다. 비행 중에는 엔진 ambient + 기장 안내방송 + lofi 음악(또는 YouTube URL)이 자동 재생.
 
