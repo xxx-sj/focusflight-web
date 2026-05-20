@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { distance as turfDistance } from '@turf/distance';
 import { point } from '@turf/helpers';
 import { useFlightStore } from '../../store/flightStore';
@@ -42,10 +42,17 @@ export default function InFlight() {
   const [showSoundPanel, setShowSoundPanel] = useState(false);
   const [showYtPanel, setShowYtPanel] = useState(false);
   const [showTodos, setShowTodos] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  // Default to the chase camera — at low overview zoom the plane moves
+  // <1 px/sec, so users perceive it as stuck. Follow mode shows the world
+  // scrolling past the plane, making the motion immediately obvious.
+  const [viewMode, setViewMode] = useState<ViewMode>('follow');
   const [followZoom, setFollowZoom] = useState(8.5);
   const [overviewZoom, setOverviewZoom] = useState(3);
   const [satellite, setSatellite] = useState(false);
+  // Auto-fit the overview zoom to the route once we know origin/destination,
+  // so when the user toggles to overview the route fills the screen instead
+  // of being a tiny line in a sea of continent.
+  const overviewFitted = useRef(false);
   const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
@@ -89,6 +96,26 @@ export default function InFlight() {
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Once per mount, pick an overview zoom that fits the route to ~55% of the
+  // viewport width. Default zoom 3 made the plane move <1 px/sec for typical
+  // routes, so users perceived it as not flying. User can still adjust the
+  // slider afterwards — this only sets the initial value.
+  const originCode = active?.origin;
+  const destCode = active?.destination;
+  useEffect(() => {
+    if (overviewFitted.current) return;
+    if (!originCode || !destCode) return;
+    const o = resolveLocation(originCode);
+    const d = resolveLocation(destCode);
+    if (!o || !d) return;
+    overviewFitted.current = true;
+    const km = turfDistance(point([o.lng, o.lat]), point([d.lng, d.lat]), { units: 'kilometers' });
+    if (km <= 0) return;
+    const viewportPx = Math.min(window.innerWidth || 1200, 1600);
+    const z = Math.log2((viewportPx * 0.55 * 156543) / (km * 1000));
+    setOverviewZoom(Math.max(2, Math.min(7, Math.round(z * 2) / 2)));
+  }, [originCode, destCode]);
 
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find((c) => c.id === active.flight.category);

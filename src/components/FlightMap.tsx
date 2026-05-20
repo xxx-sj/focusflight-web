@@ -287,7 +287,11 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [origin, destination]);
+    // Stable keys — origin/destination object identity changes every render
+    // (resolveLocation creates fresh objects), but the underlying code +
+    // lat/lng don't, so restarting the loop each render was needless churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin?.code, destination?.code]);
 
   return <div ref={containerRef} className={className} style={{ background: '#000' }} />;
 }
